@@ -1,3 +1,6 @@
+# emacs version files
+*~
+
 # Object files
 *.o
 *.ko
