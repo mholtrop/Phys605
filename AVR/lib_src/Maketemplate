@@ -1,0 +1,198 @@
+################################################
+#
+# Makefile Template for Arduino Libraries
+# Author: Maurik Holtrop
+# Copyleft.
+#
+# Version 2
+#
+################################################
+
+AVR_HOME ?= ${HOME}/code/AVR
+
+include $(AVR_HOME)/Makefile_specs.mk
+
+###############################################################################################
+#
+# You are unlikely to need to change anything below this line.
+#
+###############################################################################################
+
+LIB_INSTALL_DIR=$(AVR_HOME)/lib/$(SYSTEM_TYPE)
+INC_INSTALL_DIR=$(AVR_HOME)/include
+
+HEADERS_INSTALL=$(addprefix $(INC_INSTALL_DIR)/, $(notdir $(HEADERS)) )
+
+DEPDIR = depdir
+OBJDIR = obj
+
+
+# Program settings
+CC = avr-gcc
+CXX = avr-g++
+OBJCOPY = avr-objcopy
+OBJDUMP = avr-objdump
+AR  = avr-ar
+SIZE = avr-size
+NM = avr-nm
+AVRDUDE = avrdude
+REMOVE = rm -f
+MV = mv -f
+
+#
+# Details of the compiler process. 
+# Probably no need to change any of this.
+#
+
+ifndef OPTLEVEL
+OPTLEVEL=s
+endif
+
+ifdef DEBUG
+OPTIMIZE = -g
+else
+OPTIMIZE = -O$(OPTLEVEL)
+endif
+
+# compiler
+CFLAGS +=$(OPTIMIZE) -mmcu=$(MCU)  -DF_CPU=$(F_CPU) \
+	-fpack-struct -fshort-enums             \
+	-funsigned-bitfields -funsigned-char    \
+	-Wall -Wstrict-prototypes               \
+#	-Wa,-ahlms=$(firstword                  \
+#	$(filter %.lst, $(<:.c=.lst)))
+
+# c++ specific flags
+CXXFLAGS +=$(OPTIMIZE) -mmcu=$(MCU) -DF_CPU=$(F_CPU) \
+	-fno-exceptions 		           \
+	-fpack-struct -fshort-enums     	   \
+	-funsigned-bitfields -funsigned-char       \
+	-Wall 	                                   \
+#	-Wa,-ahlms=$(firstword                     \
+#	$(filter %.lst, $(<:.cpp=.lst))\
+#	$(filter %.lst, $(<:.cc=.lst)) \
+#	$(filter %.lst, $(<:.C=.lst)))
+
+# assembler
+ASMFLAGS +=  -mmcu=$(MCU)        \
+	-x assembler-with-cpp            \
+#	-Wa,-gstabs,-ahlms=$(firstword   \
+#		$(<:.S=.lst) $(<.s=.lst))
+
+# linker
+LDFLAGS=-Wl,-Map,$(TARGET).map -mmcu=$(MCU) 
+
+# Define all object files.
+OBJ = $(addprefix $(OBJDIR)/,$(SRC:.c=.o) $(CXXSRC:.cpp=.o) $(ASRC:.S=.o) )
+
+INC += -I$(AVR_HOME)/include -I$(AVR_HOME)/include/variants/$(BOARD_TYPE)
+
+
+##### ADDED Flags ####
+
+CFLAGS   += -I. -DF_CPU=$(F_CPU) -DMCU=$(MCU)  $(INC)
+CXXFLAGS += -I. -DF_CPU=$(F_CPU) -DMCU=$(MCU)  $(INC)
+ASMFLAGS += -I.  -DF_CPU=$(F_CPU) -DMCU=$(MCU) $(INC)
+
+all:  $(LIB) 
+
+help:
+	@echo '############################################################'
+	@echo '# Make file for creating Arduino-like Libraries            #'
+	@echo '############################################################'
+	@echo ''
+	@echo 'NOTE: Really important, you must set the correct chip in the '
+	@echo '      file: Makefile_specs_* and include that at the top!    '
+	@echo '      You also need the set the chip frequency...'
+	@echo ''
+	@echo '############################################################'
+	@echo ''
+	@echo 'AVR_HOME:'$(AVR_HOME)
+	@echo ''
+	@echo 'SYSTEM  :'$(SYSTEM_TYPE)
+	@echo 'BOARD:  :'$(BOARD_TYPE)
+	@echo 'MCU     :'$(MCU)
+	@echo 'F_CPU   :'$(F_CPU)
+	@echo ''
+	@echo 'SRC:    :'$(SRC)
+	@echo 'CXXSRC  :'$(CXXSRC)
+	@echo 'HEADERS :'$(HEADERS)
+	@echo 'OBJ     :'$(OBJ)
+	@echo 'INC     :'$(INC)
+	@echo 'CFLAGS  :'$(CFLAGS)
+	@echo 'CXXFLAGS:'$(CXXFLAGS)
+	@echo 'ASMFLAGS:'$(ASMFLAGS)
+	@echo ''
+	@echo 'HEADERS :'$(HEADERS)
+	@echo 'H INSTAL:'$(HEADERS_INSTALL)
+
+
+
+$(LIB): $(OBJ) Makefile 
+#	@for i in $(OBJ); do echo $(AR) rcs $(LIB) $$i; $(AR) rcs $(LIB) $$i; done
+	$(AR) rcs $(LIB) $(OBJ)
+
+install: $(LIB_INSTALL_DIR)/$(LIB) $(HEADERS_INSTALL)
+
+
+$(LIB_INSTALL_DIR)/$(LIB): $(LIB)
+	test -d $(LIB_INSTALL_DIR) || mkdir -p $(LIB_INSTALL_DIR)
+	cp $(LIB) $(LIB_INSTALL_DIR)
+
+$(HEADERS_INSTALL): $(HEADERS)
+	cp $(HEADERS) $(INC_INSTALL_DIR)
+
+# Compile: create object files from C++ source files.
+$(OBJDIR)/%.o: %.cpp
+	@test -d $(dir $@) || mkdir -p $(dir $@)
+	@test -d $(DEPDIR)/$(dir $*) || mkdir -p $(DEPDIR)/$(dir $*)
+	$(CXX) -c $(CXXFLAGS) $< -o $@
+
+# Compile: create object files from C source files.
+$(OBJDIR)/%.o: %.c
+	@test -d $(dir $@) || mkdir -p $(dir $@)
+	@test -d $(DEPDIR)/$(dir $*) || mkdir -p $(DEPDIR)/$(dir $*)
+	$(CC) -c $(CFLAGS) $< -o $@ 
+
+#.c.o:  
+#	$(CC) -c $(CFLAGS) $< -o $@ 
+
+
+# Assemble: create object files from assembler source files.
+$(OBJDIR)/%.o: %.S
+	@test -d $(dir $@) || mkdir -p $(dir $@)
+	$(CC) -c $(ASMFLAGS) $< -o $@
+
+
+# Automatic dependencies
+# %.d: %.c
+# 	$(CC) -M $(CFLAGS) $< | sed "s;$(notdir $*).o:;$*.o $*.d:;" > $@
+#
+# %.d: %.cpp
+#	$(CXX) -M $(CXXFLAGS) $< | sed "s;$(notdir $*).o:;$*.o $*.d:;" > $@
+
+#
+# Don't need the above, this will do so automatically at the time of compile.
+# It means the "include" statements below need a - in front. 
+
+CFLAGS +=  -Wp,-MD,$(DEPDIR)/$*.d
+CXXFLAGS+=  -Wp,-MD,$(DEPDIR)/$*.d
+
+# Target: clean project.
+clean:
+	rm -f $(OBJ) $(addprefix $(DEPDIR)/,$(SRC:.c=.d) $(CXXSRC:.cpp=.d))
+
+distclean: clean
+	rm -f $(LIB) $(LIB_INSTALL_DIR)/$(LIB) $(HEADERS_INSTALL)
+
+.PHONY:	all clean distclean build elf hex eep lss sym program coff extcoff clean applet_files sizebefore sizeafter
+
+#
+# Include the dependency information. The - makes sure that it won't fail the make process if the
+# .d files do not exist already. 
+# The .d files are made during the compile stage with the "-MD" flag.
+# We use -Wp,-MD,$(DEPDIR)/$*.d to place the *.d files in the DEPDIR.
+# Note that this means you loose depencency information if you wipe the .d files.
+#
+-include $(SRC:%.c=$(DEPDIR)/%.d)
+-include $(CXXSRC:%.cpp=$(DEPDIR)/%.d)

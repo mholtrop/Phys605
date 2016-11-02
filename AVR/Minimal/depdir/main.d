@@ -1,0 +1,37 @@
+main.o: main.cpp /usr/local/Cellar/avr-gcc/4.8.3/avr/include/avr/io.h \
+ /usr/local/Cellar/avr-gcc/4.8.3/avr/include/avr/sfr_defs.h \
+ /usr/local/Cellar/avr-gcc/4.8.3/avr/include/inttypes.h \
+ /usr/local/Cellar/avr-gcc/4.8.3/lib/gcc/avr/4.8.3/include/stdint.h \
+ /usr/local/Cellar/avr-gcc/4.8.3/avr/include/stdint.h \
+ /usr/local/Cellar/avr-gcc/4.8.3/avr/include/avr/iom168.h \
+ /usr/local/Cellar/avr-gcc/4.8.3/avr/include/avr/iomx8.h \
+ /usr/local/Cellar/avr-gcc/4.8.3/avr/include/avr/portpins.h \
+ /usr/local/Cellar/avr-gcc/4.8.3/avr/include/avr/common.h \
+ /usr/local/Cellar/avr-gcc/4.8.3/avr/include/avr/version.h \
+ /usr/local/Cellar/avr-gcc/4.8.3/avr/include/avr/fuse.h \
+ /usr/local/Cellar/avr-gcc/4.8.3/avr/include/avr/lock.h \
+ /Users/maurik/BoxSync/Phys605/code/AVR/include/Arduino.h \
+ /usr/local/Cellar/avr-gcc/4.8.3/avr/include/stdlib.h \
+ /usr/local/Cellar/avr-gcc/4.8.3/lib/gcc/avr/4.8.3/include/stddef.h \
+ /usr/local/Cellar/avr-gcc/4.8.3/lib/gcc/avr/4.8.3/include/stdbool.h \
+ /usr/local/Cellar/avr-gcc/4.8.3/avr/include/string.h \
+ /usr/local/Cellar/avr-gcc/4.8.3/avr/include/math.h \
+ /usr/local/Cellar/avr-gcc/4.8.3/avr/include/avr/pgmspace.h \
+ /usr/local/Cellar/avr-gcc/4.8.3/avr/include/avr/interrupt.h \
+ /Users/maurik/BoxSync/Phys605/code/AVR/include/binary.h \
+ /Users/maurik/BoxSync/Phys605/code/AVR/include/WCharacter.h \
+ /usr/local/Cellar/avr-gcc/4.8.3/avr/include/ctype.h \
+ /Users/maurik/BoxSync/Phys605/code/AVR/include/WString.h \
+ /Users/maurik/BoxSync/Phys605/code/AVR/include/HardwareSerial.h \
+ /Users/maurik/BoxSync/Phys605/code/AVR/include/Stream.h \
+ /Users/maurik/BoxSync/Phys605/code/AVR/include/Print.h \
+ /usr/local/Cellar/avr-gcc/4.8.3/avr/include/stdio.h \
+ /usr/local/Cellar/avr-gcc/4.8.3/lib/gcc/avr/4.8.3/include/stdarg.h \
+ /Users/maurik/BoxSync/Phys605/code/AVR/include/Printable.h \
+ /Users/maurik/BoxSync/Phys605/code/AVR/include/USBAPI.h \
+ /usr/local/Cellar/avr-gcc/4.8.3/avr/include/avr/eeprom.h \
+ /usr/local/Cellar/avr-gcc/4.8.3/avr/include/util/delay.h \
+ /usr/local/Cellar/avr-gcc/4.8.3/avr/include/util/delay_basic.h \
+ /Users/maurik/BoxSync/Phys605/code/AVR/include/Arduino.h \
+ /Users/maurik/BoxSync/Phys605/code/AVR/include/variants/standard/pins_arduino.h \
+ /Users/maurik/BoxSync/Phys605/code/AVR/include/HardwareSerial.h

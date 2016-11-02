@@ -1,0 +1,100 @@
+# -*- mode:Makefile -*-
+# Name of AVR CPU to program
+
+#BOARD=Duemilanove
+#BOARD_TYPE=standard
+#MCU=atmega328
+
+#BOARD=Mega
+#BOARD_TYPE=mega
+#MCU=atmega1280
+
+BOARD=Chip1M
+BOARD_TYPE=standard
+MCU=atmega168
+
+# Frequency of CPU, 16Mhz for a Mega1280 , 20Mhz for the Mega168 or 368
+
+#F_CPU=16000000
+F_CPU=1000000
+
+# id to use with programmer
+# default: PROGRAMMER_MCU=$(MCU)
+# In case the programer used, e.g avrdude, doesn't
+# accept the same MCU name as avr-gcc (for example
+# for ATmega8s, avr-gcc expects 'atmega8' and 
+# avrdude requires 'm8')
+
+#
+# For an Arduino Mega, programming through USB.
+#
+#PROGRAMMER_MCU=m328p
+PROGRAMMER_MCU=m168
+#AVRDUDE_EXTRA_FLAGS= -F -b57600 -V
+
+# 
+AVRDUDE_PROGRAMMERID=avrisp2
+#AVRDUDE_PROGRAMMERID=arduino
+
+# port--serial or parallel port to which your 
+# hardware programmer is attached
+#
+#AVRDUDE_PORT=/dev/tty.usbserial-A9005cJ0
+AVRDUDE_PORT=usb
+#/dev/tty.usbserial-A6008hex
+####################################################################################
+# Program settings
+CC = avr-gcc
+CXX = avr-g++
+OBJCOPY = avr-objcopy
+OBJDUMP = avr-objdump
+AR  = avr-ar
+SIZE = avr-size
+NM = avr-nm
+AVRDUDE = avrdude
+REMOVE = rm -f
+MV = mv -f
+
+#
+# Details of the compiler process. 
+# Probably no need to change any of this.
+#
+
+ifndef OPTLEVEL
+OPTLEVEL=s
+endif
+
+ifdef DEBUG
+OPTIMIZE = -g
+else
+OPTIMIZE = -O$(OPTLEVEL)
+endif
+
+# compiler
+CFLAGS +=$(OPTIMIZE) -mmcu=$(MCU) -DF_CPU=$(F_CPU) \
+	-fpack-struct -fshort-enums             \
+	-funsigned-bitfields -funsigned-char    \
+	-Wall -Wstrict-prototypes               \
+#	-Wa,-ahlms=$(firstword                  \
+#	$(filter %.lst, $(<:.c=.lst)))
+
+# c++ specific flags
+CXXFLAGS +=$(OPTIMIZE) -mmcu=$(MCU)  -DF_CPU=$(F_CPU) \
+	-fno-exceptions 		           \
+	-fpack-struct -fshort-enums     	   \
+	-funsigned-bitfields -funsigned-char       \
+	-Wall 	                                   \
+#	-Wa,-ahlms=$(firstword                     \
+#	$(filter %.lst, $(<:.cpp=.lst))\
+#	$(filter %.lst, $(<:.cc=.lst)) \
+#	$(filter %.lst, $(<:.C=.lst)))
+
+# assembler
+ASMFLAGS +=  -mmcu=$(MCU)        \
+	-x assembler-with-cpp            \
+#	-Wa,-gstabs,-ahlms=$(firstword   \
+#		$(<:.S=.lst) $(<.s=.lst))
+
+# linker
+LDFLAGS=-Wl,-Map,$(TARGET).map -mmcu=$(MCU) 
+
