@@ -18,12 +18,12 @@
 
 #include <inttypes.h>
 
-#if defined(ARDUINO) && ARDUINO >= 100
+/* #if defined(ARDUINO) && ARDUINO >= 100 */
 #include "Arduino.h"  // for digitalRead, digitalWrite, etc
-#else
+/*#else
 #include "WProgram.h"
 #endif
-
+*/
 // Normally Servo.h must be included before Firmata.h (which then includes
 // this file).  If Servo.h wasn't included, this allows the code to still
 // compile, but without support for any Servos.  Hopefully that's what the
@@ -142,7 +142,7 @@ writePort(port, value, bitmask):  Write an 8 bit port.
 #endif
 
 // Arduino Duemilanove, Diecimila, and NG
-#if defined(__AVR_ATmega168__) || defined(__AVR_ATmega328P__) || defined(__AVR_ATmega328__)
+#if defined(__AVR_ATmega168__) ||  defined(__AVR_ATmega168__) || defined(__AVR_ATmega328P__) || defined(__AVR_ATmega328__)
 #if defined(NUM_ANALOG_INPUTS) && NUM_ANALOG_INPUTS == 6
 #define TOTAL_ANALOG_PINS       6
 #define TOTAL_PINS              20 // 14 digital + 6 analog

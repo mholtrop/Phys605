@@ -94,7 +94,7 @@ CFLAGS   += -I. -DF_CPU=$(F_CPU) -DMCU=$(MCU)  $(INC)
 CXXFLAGS += -I. -DF_CPU=$(F_CPU) -DMCU=$(MCU)  $(INC)
 ASMFLAGS += -I.  -DF_CPU=$(F_CPU) -DMCU=$(MCU) $(INC)
 
-all:  $(LIB) 
+all: includes  $(LIB) 
 
 help:
 	@echo '############################################################'
@@ -134,6 +134,7 @@ $(LIB): $(OBJ) Makefile
 
 install: $(LIB_INSTALL_DIR)/$(LIB) $(HEADERS_INSTALL)
 
+includes: $(HEADERS_INSTALL)
 
 $(LIB_INSTALL_DIR)/$(LIB): $(LIB)
 	test -d $(LIB_INSTALL_DIR) || mkdir -p $(LIB_INSTALL_DIR)

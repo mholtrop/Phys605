@@ -12,7 +12,7 @@
 #
 # Specs come from a SPEC file, also used for library.
 #
-include Makefile_specs
+include ../Makefile_specs.mk
 
 DEPDIR = depdir
 
@@ -33,4 +33,4 @@ SOURCES=main.cpp
 #
 # Include all the common rules for AVR.
 #
-include Makefile_common
+include ../Makefile_common.mk

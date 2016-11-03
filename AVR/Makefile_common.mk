@@ -10,11 +10,11 @@
 # make clean
 #
 #
-# Include this file in the Makefile of your project.
+# Include this file in the Makefile of your project at the BOTTOM of the Makefile.
 #
-# Specs come from SPEC file, also used for library.
+# Specs come from SPEC file (Makefile_spec.mk), which is also used for compiling the libraries.
+# You include the SPEC file at the TOP of your Makefile.
 #
-
 AVR_HOME ?= ${HOME}/code/AVR
 
 DEPDIR = depdir
@@ -23,7 +23,7 @@ DEPDIR = depdir
 INC= -I${AVR_HOME}/include -I${AVR_HOME}/include/variants/$(BOARD_TYPE) $(EXTRA_INCLUDES)
 
 # libraries to link in (e.g. -lmylib)
-LIBS= -Wl,-u,vfprintf -lprintf_flt -lm -lc -L${AVR_HOME}/lib/$(BOARD) -larduino  -larduinoutil $(EXTRA_LIBS)
+LIBS= -Wl,-u,vfprintf -lprintf_flt -lm -lc -L${AVR_HOME}/lib/$(SYSTEM_TYPE) -larduino  -larduinoutil $(EXTRA_LIBS)
 #LIBS= -Wl,-u,vfprintf -lprintf_flt -lm -lc 
 
 ##### ADDED Flags ####
@@ -69,6 +69,64 @@ LST=$(filter %.lst, $(OBJDEPS:.o=.lst))
 # All the possible generated assembly 
 # files (.s files)
 GENASMFILES=$(filter %.s, $(OBJDEPS:.o=.s)) 
+
+####################################################################################
+# Program settings
+CC = avr-gcc
+CXX = avr-g++
+OBJCOPY = avr-objcopy
+OBJDUMP = avr-objdump
+AR  = avr-ar
+SIZE = avr-size
+NM = avr-nm
+AVRDUDE = avrdude
+REMOVE = rm -f
+MV = mv -f
+
+#
+# Details of the compiler process. 
+# Probably no need to change any of this.
+#
+
+ifndef OPTLEVEL
+OPTLEVEL=s
+endif
+
+ifdef DEBUG
+OPTIMIZE = -g
+else
+OPTIMIZE = -O$(OPTLEVEL)
+endif
+
+# compiler
+CFLAGS +=$(OPTIMIZE) -mmcu=$(MCU) -DF_CPU=$(F_CPU) \
+	-fpack-struct -fshort-enums             \
+	-funsigned-bitfields -funsigned-char    \
+	-Wall -Wstrict-prototypes               \
+#	-Wa,-ahlms=$(firstword                  \
+#	$(filter %.lst, $(<:.c=.lst)))
+
+# c++ specific flags
+CXXFLAGS +=$(OPTIMIZE) -mmcu=$(MCU)  -DF_CPU=$(F_CPU) \
+	-fno-exceptions 		           \
+	-fpack-struct -fshort-enums     	   \
+	-funsigned-bitfields -funsigned-char       \
+	-Wall 	                                   \
+#	-Wa,-ahlms=$(firstword                     \
+#	$(filter %.lst, $(<:.cpp=.lst))\
+#	$(filter %.lst, $(<:.cc=.lst)) \
+#	$(filter %.lst, $(<:.C=.lst)))
+
+# assembler
+ASMFLAGS +=  -mmcu=$(MCU)        \
+	-x assembler-with-cpp            \
+#	-Wa,-gstabs,-ahlms=$(firstword   \
+#		$(<:.S=.lst) $(<.s=.lst))
+
+# linker
+LDFLAGS=-Wl,-Map,$(TARGET).map -mmcu=$(MCU) 
+
+
 
 
 .SUFFIXES : .c .cc .cpp .C .o .out .s .S \
@@ -181,20 +239,34 @@ $(GDBINITFILE): $(TARGET)
 help:
 	@echo "Make file for AVR programming."
 	@echo ""
-	@echo "make           -	build the *.out executable."
-	@echo "make lib       - make the library in lib."
-	@echo "make disasm    -	make a *.s disassembled file."
-	@echo "make stats     - print the objects stats."
-	@echo "make hex       -	make a *.hex file, ready for burning."
-	@echo "make burn      -	burn the code using avrdude. "
+	@echo "make                 - build the *.out executable."
+	@echo "make lib             - make the library in lib."
+	@echo "make disasm          - make a *.s disassembled file."
+	@echo "make stats           - print the objects stats."
+	@echo "make hex             - make a *.hex file, ready for burning."
+	@echo "make burn            - burn the code using avrdude. "
 	@echo " "
-	@echo "make gdb       -	initialize gdb debugging"
+	@echo "make gdb             - initialize gdb debugging"
 	@echo " "
-	@echo "make clean     -	cleanup"
-	@echo "make distclean - really cleanup. "
+	@echo "make clean           - cleanup"
+	@echo "make distclean       - really cleanup. "
 	@echo " "
 	@echo "Using: "
-	@echo "AVR_HOME = $(AVR_HOME) "
+	@echo "AVR_HOME             = $(AVR_HOME) "
+	@echo "BOARD_TYPE           = $(BOARD_TYPE) "
+	@echo "MCU                  = $(MCU) "
+	@echo "F_CPU                = $(F_CPU) "
+	@echo "SYSTEM_TYPE          = $(SYSTEM_TYPE)"
+	@echo "PROGRAMMER_MCU       = $(PROGRAMMER_MCU)"
+	@echo "AVRDUDE_PROGRAMMERID = $(AVRDUDE_PROGRAMMERID)"
+
+exhelp: help
+	@echo ""
+	@echo "Detailed help to debug makefile:"
+	@echo "CFLAGS               = $(CFLAGS)"
+	@echo "CXXFLAGS             = $(CXXFLAGS)"
+	@echo "LIBS                 = $(LIBS)"
+
 
 
 #### Cleanup ####
@@ -208,7 +280,7 @@ clean:
 
 
 distclean: clean
-	(cd lib/src; make distclean)
+	# Nothing else to remove?
 
 #-include $(CFILES:%.c=$(DEPDIR)/%.d)
 #-include $(CPPFILES:%.cpp=$(DEPDIR)/%.d)

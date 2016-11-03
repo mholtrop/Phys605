@@ -8,11 +8,17 @@
 
 AVR_HOME ?= ${HOME}/code/AVR
 
-UTILS= Adafruit_NeoPixel EEPROM  LiquidCrystal SPI Sensirion  SoftwareSerial Wire
+UTILS= Adafruit_NeoPixel EEPROM Firmata LiquidCrystal SPI Sensirion  SoftwareSerial Wire
 CORE = Core
 
 
-all: libarduino.a  libardionoutil.a
+all: includes libarduino.a  libardionoutil.a
+
+
+includes:
+	for i in $(CORE) $(UTILS); do \
+	    echo "Installing includes for $$i";cd $$i; make includes; cd ..;\
+	done
 
 libarduino.a:
 	for i in $(CORE); do \

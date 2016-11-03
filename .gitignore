@@ -1,6 +1,12 @@
 # emacs version files
 *~
 
+# dependency dirs
+depdir
+
+# Copied include files
+AVR/include/*.h
+
 # Object files
 *.o
 *.ko
