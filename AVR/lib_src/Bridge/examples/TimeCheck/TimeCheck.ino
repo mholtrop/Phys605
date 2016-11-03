@@ -2,7 +2,7 @@
   Time Check
 
  Gets the time from Linux via Bridge then parses out hours,
- minutes and seconds for the Arduino using an Arduino Yún.
+ minutes and seconds using a YunShield/Yún.
 
  created  27 May 2013
  modified 21 June 2013
@@ -10,7 +10,7 @@
 
  This example code is in the public domain.
 
- http://arduino.cc/en/Tutorial/TimeCheck
+ http://www.arduino.cc/en/Tutorial/TimeCheck
 
  */
 
@@ -23,10 +23,10 @@ int lastSecond = -1;          // need an impossible value for comparison
 
 void setup() {
   Bridge.begin();        // initialize Bridge
-  Serial.begin(9600);    // initialize serial
+  SerialUSB.begin(9600);    // initialize serial
 
   while (!Serial);              // wait for Serial Monitor to open
-  Serial.println("Time Check");  // Title of sketch
+  SerialUSB.println("Time Check");  // Title of sketch
 
   // run an initial date process. Should return:
   // hh:mm:ss :
@@ -41,14 +41,20 @@ void loop() {
 
   if (lastSecond != seconds) { // if a second has passed
     // print the time:
-    if (hours <= 9) Serial.print("0");    // adjust for 0-9
-    Serial.print(hours);
-    Serial.print(":");
-    if (minutes <= 9) Serial.print("0");  // adjust for 0-9
-    Serial.print(minutes);
-    Serial.print(":");
-    if (seconds <= 9) Serial.print("0");  // adjust for 0-9
-    Serial.println(seconds);
+    if (hours <= 9) {
+      SerialUSB.print("0");  // adjust for 0-9
+    }
+    SerialUSB.print(hours);
+    SerialUSB.print(":");
+    if (minutes <= 9) {
+      SerialUSB.print("0");  // adjust for 0-9
+    }
+    SerialUSB.print(minutes);
+    SerialUSB.print(":");
+    if (seconds <= 9) {
+      SerialUSB.print("0");  // adjust for 0-9
+    }
+    SerialUSB.println(seconds);
 
     // restart the date process:
     if (!date.running()) {

@@ -6,7 +6,7 @@
 #
 # Spec file of board to build for:
 
-CXXSRC=EEPROM.cpp
+CXXSRC=
 SRC=
 
 HEADERS=EEPROM.h

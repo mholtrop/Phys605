@@ -32,7 +32,7 @@
 
  This example code is in the public domain.
 
- http://arduino.cc/en/Tutorial/LiquidCrystalSerial
+ http://www.arduino.cc/en/Tutorial/LiquidCrystalSerial
  */
 
 // include the library code:
@@ -48,8 +48,7 @@ void setup() {
   Serial.begin(9600);
 }
 
-void loop()
-{
+void loop() {
   // when characters arrive over the serial port...
   if (Serial.available()) {
     // wait a bit for the entire message to arrive

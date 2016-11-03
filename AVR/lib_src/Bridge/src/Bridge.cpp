@@ -87,10 +87,11 @@ void BridgeClass::begin() {
 void BridgeClass::put(const char *key, const char *value) {
   // TODO: do it in a more efficient way
   String cmd = "D";
+  uint8_t res[1];
   cmd += key;
   cmd += "\xFE";
   cmd += value;
-  transfer((uint8_t*)cmd.c_str(), cmd.length());
+  transfer((uint8_t*)cmd.c_str(), cmd.length(), res, 1);
 }
 
 unsigned int BridgeClass::get(const char *key, uint8_t *value, unsigned int maxlen) {
@@ -191,12 +192,13 @@ uint16_t BridgeClass::transfer(const uint8_t *buff1, uint16_t len1,
 
     // Recv data
     for (uint16_t i = 0; i < l; i++) {
+      // Cut received data if rxbuffer is too small
+      if (i >= rxlen)
+          break;
       int c = timedRead(5);
       if (c < 0)
         continue;
-      // Cut received data if rxbuffer is too small
-      if (i < rxlen)
-        rxbuff[i] = c;
+      rxbuff[i] = c;
       crcUpdate(c);
     }
 
@@ -239,10 +241,41 @@ void BridgeClass::dropAll() {
   }
 }
 
+#if defined(ARDUINO_ARCH_SAM)
+#include <Reset.h>
+#endif
+
+#if defined(ARDUINO_ARCH_SAM)
+void checkForRemoteSketchUpdate(uint8_t pin) {
+  // The host force pin LOW to signal that a new sketch is coming
+  pinMode(pin, INPUT_PULLUP);
+  delay(50);
+  if (digitalRead(pin) == LOW) {
+    initiateReset(1);
+    while (true)
+      ; // Wait for reset to SAM-BA
+  }
+
+  // Restore in standard state
+  pinMode(pin, INPUT);
+}
+#else
+void checkForRemoteSketchUpdate(uint8_t /* pin */) {
+  // Empty, bootloader is enough.
+}
+#endif
+
 // Bridge instance
-#ifdef __AVR_ATmega32U4__
+#if defined(SERIAL_PORT_LINUXBRIDGE)
+SerialBridgeClass Bridge(SERIAL_PORT_LINUXBRIDGE);
+#elif defined(SERIAL_PORT_HARDWARE)
+SerialBridgeClass Bridge(SERIAL_PORT_HARDWARE);
+#elif defined(SERIAL_PORT_HARDWARE_OPEN)
+SerialBridgeClass Bridge(SERIAL_PORT_HARDWARE_OPEN);
+#elif defined(__AVR_ATmega32U4__) // Legacy fallback
 // Leonardo variants (where HardwareSerial is Serial1)
 SerialBridgeClass Bridge(Serial1);
 #else
 SerialBridgeClass Bridge(Serial);
 #endif
+

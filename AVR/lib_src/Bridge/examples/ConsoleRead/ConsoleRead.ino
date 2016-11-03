@@ -1,5 +1,5 @@
 /*
-  Console Read example
+Console Read example for YunShield/Yún
 
  Read data coming from bridge using the Console.read() function
  and store it in a string.
@@ -17,7 +17,7 @@
 
  This example code is in the public domain.
 
- http://arduino.cc/en/Tutorial/ConsoleRead
+ http://www.arduino.cc/en/Tutorial/ConsoleRead
 
  */
 
@@ -49,13 +49,10 @@ void loop() {
       // Ask again for name and clear the old name
       Console.println("Hi, what's your name?");
       name = "";  // clear the name string
-    }
-    else {  	 // if the buffer is empty Cosole.read() returns -1
+    } else {  	 // if the buffer is empty Cosole.read() returns -1
       name += c; // append the read char from Console to the name string
     }
   } else {
     delay(100);
   }
 }
-
-

@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 2013 Arduino LLC. All right reserved.
+  Copyright (c) 2014 Arduino LLC. All right reserved.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -19,33 +19,9 @@
 #ifndef _YUN_SERVER_H_
 #define _YUN_SERVER_H_
 
-#include <Bridge.h>
-#include <Server.h>
+#include <BridgeServer.h>
 
-class YunClient;
-
-class YunServer : public Server {
-  public:
-    // Constructor with a user provided BridgeClass instance
-    YunServer(uint16_t port = 5555, BridgeClass &_b = Bridge);
-
-    void begin();
-    YunClient accept();
-
-    virtual size_t write(uint8_t c);
-
-    void listenOnLocalhost()   {
-      useLocalhost = true;
-    }
-    void noListenOnLocalhost() {
-      useLocalhost = false;
-    }
-
-  private:
-    uint16_t port;
-    bool listening;
-    bool useLocalhost;
-    BridgeClass &bridge;
-};
+#warning "The use of YunServer is deprecated. Use BridgeServer instead!"
+typedef BridgeServer YunServer;
 
 #endif // _YUN_SERVER_H_

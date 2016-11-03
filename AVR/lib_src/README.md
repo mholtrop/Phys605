@@ -1,0 +1,2 @@
+# Arduino like Libraries
+These are a number of libraries that will allow you to use the ATMega chip similar to an Arduino. You can make the same system calls. The biggest difference is that you will need to write your own main.cpp. The advantage is that you are fully in control of the program now.

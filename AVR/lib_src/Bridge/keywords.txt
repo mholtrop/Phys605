@@ -3,18 +3,21 @@
 #######################################
 
 #######################################
-# Class (KEYWORD3)
+# Class (KEYWORD1)
 #######################################
 
-Bridge	KEYWORD3
-FileIO	KEYWORD3
-FileSystem	KEYWORD3
-Console	KEYWORD3
-Process	KEYWORD3
-Mailbox	KEYWORD3
-HttpClient	KEYWORD3
-YunServer	KEYWORD3
-YunClient	KEYWORD3
+Bridge	KEYWORD1	YunBridgeLibrary
+FileIO	KEYWORD4	YunFileIOConstructor
+FileSystem	KEYWORD1	YunFileIOConstructor
+Console	KEYWORD1	YunConsoleConstructor
+Process	KEYWORD1	YunProcessConstructor
+Mailbox	KEYWORD1	YunMailboxConstructor
+HttpClient	KEYWORD1	YunHttpClientConstructor
+YunServer	KEYWORD1	YunServerConstructor
+YunClient	KEYWORD1	YunClientConstructor
+BridgeServer	KEYWORD1	YunServerConstructor
+BridgeClient	KEYWORD1	YunClientConstructor
+BridgeSSLClient	KEYWORD1	YunClientConstructor
 
 #######################################
 # Methods and Functions (KEYWORD2)
@@ -42,6 +45,7 @@ connected	KEYWORD2
 
 # FileIO Class
 File	KEYWORD2
+BridgeFile	KEYWORD2
 seek	KEYWORD2
 position	KEYWORD2
 size	KEYWORD2
@@ -71,10 +75,11 @@ getAsynchronously	KEYWORD2
 ready	KEYWORD2
 getResult	KEYWORD2
 
-# YunServer Class
+# BridgeServer Class
 accept	KEYWORD2
 stop	KEYWORD2
 connect	KEYWORD2
+connectSSL	KEYWORD2
 connected	KEYWORD2
 
 

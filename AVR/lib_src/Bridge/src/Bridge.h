@@ -19,6 +19,10 @@
 #ifndef BRIDGE_H_
 #define BRIDGE_H_
 
+#ifndef BRIDGE_BAUDRATE
+#define BRIDGE_BAUDRATE 250000
+#endif
+
 #include <Arduino.h>
 #include <Stream.h>
 
@@ -66,7 +70,7 @@ class BridgeClass {
       return bridgeVersion;
     }
 
-    static const int TRANSFER_TIMEOUT = 0xFFFF;
+    static const uint16_t TRANSFER_TIMEOUT = 0xFFFF;
 
   private:
     uint8_t index;
@@ -96,7 +100,7 @@ class SerialBridgeClass : public BridgeClass {
       // Empty
     }
 
-    void begin(unsigned long baudrate = 250000) {
+    void begin(unsigned long baudrate = BRIDGE_BAUDRATE) {
       serial.begin(baudrate);
       BridgeClass::begin();
     }
@@ -106,6 +110,14 @@ class SerialBridgeClass : public BridgeClass {
 };
 
 extern SerialBridgeClass Bridge;
+
+// Some microcrontrollers don't start the bootloader after a reset.
+// This function is intended to let the microcontroller erase its
+// flash after checking a specific signal coming from the external
+// device without the need to press the erase button on the board.
+// The purpose is to enable a software update that does not require
+// a manual interaction with the board.
+extern void checkForRemoteSketchUpdate(uint8_t pin = 7);
 
 #endif /* BRIDGE_H_ */
 

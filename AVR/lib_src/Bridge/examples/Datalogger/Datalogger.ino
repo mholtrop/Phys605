@@ -2,11 +2,11 @@
   SD card datalogger
 
  This example shows how to log data from three analog sensors
- to an SD card mounted on the Arduino Yún using the Bridge library.
+ to an SD card mounted on the YunShield/Yún using the Bridge library.
 
  The circuit:
  * analog sensors on analog pins 0, 1 and 2
- * SD card attached to SD card slot of the Arduino Yún
+ * SD card attached to SD card slot of the YunShield/Yún
 
  Prepare your SD card creating an empty folder in the SD root
  named "arduino". This will ensure that the Yún will create a link
@@ -26,7 +26,7 @@
 
  This example code is in the public domain.
 
- http://arduino.cc/en/Tutorial/YunDatalogger
+ http://www.arduino.cc/en/Tutorial/YunDatalogger
 
  */
 
@@ -38,12 +38,12 @@ void setup() {
   Serial.begin(9600);
   FileSystem.begin();
 
-  while (!Serial); // wait for Serial port to connect.
-  Serial.println("Filesystem datalogger\n");
+  while (!SerialUSB); // wait for Serial port to connect.
+  SerialUSB.println("Filesystem datalogger\n");
 }
 
 
-void loop () {
+void loop() {
   // make a string that start with a timestamp for assembling the data to log:
   String dataString;
   dataString += getTimeStamp();
@@ -68,11 +68,11 @@ void loop () {
     dataFile.println(dataString);
     dataFile.close();
     // print to the serial port too:
-    Serial.println(dataString);
+    SerialUSB.println(dataString);
   }
   // if the file isn't open, pop up an error:
   else {
-    Serial.println("error opening datalog.txt");
+    SerialUSB.println("error opening datalog.txt");
   }
 
   delay(15000);
@@ -93,8 +93,9 @@ String getTimeStamp() {
   // read the output of the command
   while (time.available() > 0) {
     char c = time.read();
-    if (c != '\n')
+    if (c != '\n') {
       result += c;
+    }
   }
 
   return result;
