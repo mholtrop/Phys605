@@ -208,13 +208,13 @@ CXXFLAGS+=  -Wp,-MD,$(DEPDIR)/$*.d
 
 #### Generating hex files ####
 # hex files from elf
-#####  Generating a gdb initialisation file    #####
-.hex.out:
+#
+.out.hex:
 	$(OBJCOPY) --only-section .text  \
 		--only-section .data    \
 		--output-target $(HEXFORMAT) $< $@
 
-.hex.out.ee: 
+.out.ee.hex: 
 	$(OBJCOPY) --only-section .eeprom            \
 		--change-section-lma .eeprom=0 \
 		--output-target $(HEXFORMAT) $< $@
@@ -280,7 +280,7 @@ clean:
 
 
 distclean: clean
-	# Nothing else to remove?
+	@echo "---- Nothing else to remove? ----"
 
 #-include $(CFILES:%.c=$(DEPDIR)/%.d)
 #-include $(CPPFILES:%.cpp=$(DEPDIR)/%.d)
