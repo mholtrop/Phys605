@@ -102,29 +102,30 @@ help:
 	@echo '############################################################'
 	@echo ''
 	@echo 'NOTE: Really important, you must set the correct chip in the '
-	@echo '      file: Makefile_specs_* and include that at the top!    '
+	@echo '      file: ../Makefile_specs.mk and include that at the top!    '
 	@echo '      You also need the set the chip frequency...'
 	@echo ''
 	@echo '############################################################'
 	@echo ''
-	@echo 'AVR_HOME:'$(AVR_HOME)
+	@echo 'AVR_HOME      :'$(AVR_HOME)
+	@echo '----------------------------------------------'
+	@echo 'Change these in ../Makefile_specs.mk file:'
+	@echo 'SYSTEM        :'$(SYSTEM_TYPE)
+	@echo 'BOARD:        :'$(BOARD_TYPE)
+	@echo 'MCU           :'$(MCU)
+	@echo 'F_CPU         :'$(F_CPU)
+	@echo '----------------------------------------------'
+	@echo 'SRC:          :'$(SRC)
+	@echo 'CXXSRC        :'$(CXXSRC)
+	@echo 'HEADERS       :'$(HEADERS)
+	@echo 'OBJ           :'$(OBJ)
+	@echo 'INC           :'$(INC)
+	@echo 'CFLAGS        :'$(CFLAGS)
+	@echo 'CXXFLAGS      :'$(CXXFLAGS)
+	@echo 'ASMFLAGS      :'$(ASMFLAGS)
 	@echo ''
-	@echo 'SYSTEM  :'$(SYSTEM_TYPE)
-	@echo 'BOARD:  :'$(BOARD_TYPE)
-	@echo 'MCU     :'$(MCU)
-	@echo 'F_CPU   :'$(F_CPU)
-	@echo ''
-	@echo 'SRC:    :'$(SRC)
-	@echo 'CXXSRC  :'$(CXXSRC)
-	@echo 'HEADERS :'$(HEADERS)
-	@echo 'OBJ     :'$(OBJ)
-	@echo 'INC     :'$(INC)
-	@echo 'CFLAGS  :'$(CFLAGS)
-	@echo 'CXXFLAGS:'$(CXXFLAGS)
-	@echo 'ASMFLAGS:'$(ASMFLAGS)
-	@echo ''
-	@echo 'HEADERS :'$(HEADERS)
-	@echo 'H INSTAL:'$(HEADERS_INSTALL)
+	@echo 'HEADERS       :'$(HEADERS)
+	@echo 'HEADERS_INSTAL:'$(HEADERS_INSTALL)
 
 
 
@@ -137,11 +138,12 @@ install: $(LIB_INSTALL_DIR)/$(LIB) $(HEADERS_INSTALL)
 includes: $(HEADERS_INSTALL)
 
 $(LIB_INSTALL_DIR)/$(LIB): $(LIB)
-	test -d $(LIB_INSTALL_DIR) || mkdir -p $(LIB_INSTALL_DIR)
-	cp $(LIB) $(LIB_INSTALL_DIR)
+	@echo 'Installing '$(notdir $(shell pwd))'  in '$(LIB)
+	@test -d $(LIB_INSTALL_DIR) || mkdir -p $(LIB_INSTALL_DIR)
+	@cp $(LIB) $(LIB_INSTALL_DIR)
 
 $(HEADERS_INSTALL): $(HEADERS)
-	cp $(HEADERS) $(INC_INSTALL_DIR)
+	@cp $(HEADERS) $(INC_INSTALL_DIR)
 
 # Compile: create object files from C++ source files.
 $(OBJDIR)/%.o: %.cpp
@@ -184,7 +186,7 @@ clean:
 	rm -f $(OBJ) $(addprefix $(DEPDIR)/,$(SRC:.c=.d) $(CXXSRC:.cpp=.d))
 
 distclean: clean
-	rm -f $(LIB) $(LIB_INSTALL_DIR)/$(LIB) $(HEADERS_INSTALL)
+	rm -f $(LIB) $(LIB_INSTALL_DIR)/$(notdir $(LIB)) $(HEADERS_INSTALL)
 
 .PHONY:	all clean distclean build elf hex eep lss sym program coff extcoff clean applet_files sizebefore sizeafter
 
