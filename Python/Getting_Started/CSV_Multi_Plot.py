@@ -58,33 +58,55 @@ def main(argv=None):
     #
     # Now plot the data. plt.plot returns a tuple (plot, )
     #
+    plt.figure(figsize=(10,7))
     plots = []
     for name,dat in p_data:
-        x_ar = [float(x[0]) for x in dat ]
+        x_ar = [float(x[0]) for x in dat ]        # Selects 1st data column
+        lab = name.split('_')[2]
         if args.bode:
-            y_ar = [float(x[2]) for x in dat ]
+            y_ar = [float(x[2]) for x in dat ]    # Select 3rd data column
+            ph_ar = [float(x[3]) for x in dat ]
+            for i in range(len(ph_ar)):
+                if ph_ar[i]>0:
+                    ph_ar[i]=ph_ar[i]-360.        # Fix the phase so the crossimg plots better.
+            plt.subplot(2,1,1)
+            (p1,) = plt.plot(x_ar,y_ar,label=lab)
+            plt.title('Bode Plot of Transistor Amplifier')
+            plt.xlabel('F[Hz]',position=(0.9,1))
+            plt.ylabel('Magnitude [dB]')
+            plt.xscale('log')
+            plt.grid(True)
+
+            plt.subplot(2,1,2)
+            (p2,) = plt.plot(x_ar,ph_ar,label=lab)
+            plt.title('Phase Plot of Transistor Amplifier')
+            plt.xlabel('F[Hz]',position=(0.9,1))
+            plt.ylabel('Phase [degrees]')
+            plt.xscale('log')
+            plt.grid(True)
+
+            plots.append(p1)
+
         if args.signal:
             y_ar = [float(x[1]) for x in dat ]
+            (p1,) = plt.plot(x_ar,y_ar,label=lab)
+            plt.title('Output Signal of Transistor Amplifier')
+            plt.xlabel('Time[S]',position=(0.9,1))
+            plt.ylabel('Signal [V]')
+            plt.grid(True)
+            ax = plt.gca()
+            ax.set_xlim(-1.1e-4,1.1e-4)
+            plots.append(p1)
 
-        lab = name.split('_')[2]
-        (p1,) = plt.plot(x_ar,y_ar,label=lab)
-        plots.append(p1)
-
-    plt.legend(handles=plots)        # make sure the legend is drawn
-                     # plot with a log x axis
-    #    plt.yscale('log')
-    plt.grid(True)                     # and a grid.
     if args.bode:
-        plt.title('Bode Plot of Transistor Amplifier')
-        plt.xlabel('F[Hz]',position=(0.9,1))
-        plt.ylabel('Magnitude [dB]')
-        plt.xscale('log')
+        plt.subplot(2,1,1)
+        plt.legend(handles=plots)        # make sure the legend is drawn
+        plt.subplot(2,1,2)
+        plt.legend(handles=plots)        # make sure the legend is drawn
+    else:
+        plt.legend(handles=plots)
 
-    if args.signal:
-        plt.title('Output Signal of Transistor Amplifier')
-        plt.xlabel('Time[S]',position=(0.9,1))
-        plt.ylabel('Signal [V]')
-
+    plt.savefig("csv_plot.pdf",orientation='landscape')
     plt.show()                         # show the plot.
 
 if __name__ == "__main__":  # This makes sure that main() is called when you
