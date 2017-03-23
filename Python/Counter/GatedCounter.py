@@ -4,11 +4,6 @@ import RPi.GPIO as GPIO
 import time
 import sys
 
-
-OUT_CLK     = 23
-OUT_DATA    = 24
-OUT_CS_bar  = 25
-
 Counter_Clear = 17
 Counter_Gate = 16
 
@@ -28,86 +23,15 @@ def Setup():
     GPIO.output(Serial_CLK,0)
     GPIO.output(Serial_Load,1)
 
-    GPIO.setup(Counter_Clear,GPIO.OUT)  
+    GPIO.setup(Counter_Clear,GPIO.OUT)
     GPIO.setup(Counter_Gate,GPIO.OUT)
     GPIO.output(Counter_Clear,1)
     GPIO.output(Counter_Clear,0)
     GPIO.output(Counter_Gate,0)
 
-    # Initialize the MAX7219 output display
-    GPIO.setup(OUT_CLK,GPIO.OUT)  
-    GPIO.setup(OUT_DATA,GPIO.OUT)
-    GPIO.setup(OUT_CS_bar,GPIO.OUT)
-    GPIO.output(OUT_CLK,0)
-    GPIO.output(OUT_DATA,0)
-    GPIO.output(OUT_CS_bar,1)
 
-def Init(mode):
-    ''' Initialize the MAX7219 Chip. Mode=1 is for numbers, mode=2 is no-decode'''
-    WriteChar(0x0F,0x01) # Test ON
-    time.sleep(0.5)
-    WriteChar(0x0F,0x00) # Test OFF
-    
-    WriteChar(0x0B,0x07) # All 8 digits
-    WriteChar(0x0A,0x0B) # Quite bright 
-    WriteChar(0x0C,1) # Set for normal operation.
-    if mode == 1:
-        WriteChar(0x09,0xFF) # Decode mode
-    else:
-        WriteChar(0x09,0x00) # Raw mode
-
-
-    
-def WriteData(data):
-    '''Write the 16 bit data to the output '''
-    GPIO.output(OUT_CS_bar,0)
-    
-    for i in range(16):  # send out 16 bits.
-        GPIO.output(OUT_CLK,0)
-        #time.sleep(0.00001)
-        bit = data & 0x8000
-        GPIO.output(OUT_DATA,bit)
-        #time.sleep(0.00001)
-        GPIO.output(OUT_CLK,1)
-        #time.sleep(0.00001)
-        data <<=1
-        if(i==7):
-            GPIO.output(OUT_CLK,0)
-            GPIO.output(OUT_DATA,0)
-        #    time.sleep(0.00003)
-            
-    GPIO.output(OUT_DATA,0)
-    GPIO.output(OUT_CLK,0)
-    GPIO.output(OUT_CS_bar,1)
-       
-def WriteChar(loc,dat):
-    '''Write dat to loc. If the mode is 1 then dat is a number and loc is the location.
-       If mode is 2 then dat is an 8 bit LED position.'''
-    
-    out = (loc <<8)
-    out += dat
-    #out += 0b0000000000000000  # Dummy bits
-
-    WriteData(out)
-            
 def Cleanup():
-    WriteChar(0x0C,0x0) # Turn off
     GPIO.cleanup()
-
-
-def WriteInt(n):
-    ''' Write the integer n on the display '''
-    if n > 99999999:
-        for i in range(8):
-            WriteChar(i+1,0x0A)
-        return
-    
-    for i in range(8):
-        n,d = divmod(n,10)
-        if n==0 and d == 0:
-            WriteChar(i+1,0x0F) # Blank
-        else:
-            WriteChar(i+1,d)
 
 def LoadAndShift(Nbits=Serial_N):
     ''' Load a numner into the N shifters and then read it out by shifting.'''
@@ -116,7 +40,7 @@ def LoadAndShift(Nbits=Serial_N):
 
     out=0
     for i in range(Serial_N):
-        bit = GPIO.input(Serial_In)    # First bit is already present on SER after load.        
+        bit = GPIO.input(Serial_In)    # First bit is already present on SER after load.
         out <<= 1                      # Shift the out bits one to the left.
         out += bit                     # Add the bit we just read.
         GPIO.output(Serial_CLK, GPIO.HIGH) # Clock High loads next bit
@@ -125,30 +49,27 @@ def LoadAndShift(Nbits=Serial_N):
 
 def Main():
     ''' Run a basic counter code. '''
-    print "send on"
     Setup()
-    Init(1)
-    print "counting"
+    print "counting."
+    sys.stdout.flush()
     i=0
     while i < 1000:
-        GPIO.output(Counter_Clear,1)
-        GPIO.output(Counter_Clear,0)
-        GPIO.output(Counter_Gate,1)
-        x = 0
-        for j in range(100000):
+        GPIO.output(Counter_Clear,1) # Clear the counter.
+        GPIO.output(Counter_Clear,0) # Counter ready to count.
+        GPIO.output(Counter_Gate,1)  # Start the counter
+        x = 0                        # Do something we want to time.
+        for j in range(1000):
             x=x+j
         i += 1
-        GPIO.output(Counter_Gate,0)
-        sys.stdout.flush()
+        GPIO.output(Counter_Gate,0) # Stop the counter.
         count = LoadAndShift(24)
-        WriteInt(count)
         print "{:04d}, {:6d}".format(i,count)
         sys.stdout.flush()
         time.sleep(0.01)
-        
+
     Cleanup()
 
-            
+
 if __name__ == "__main__":
     Main()
     sys.exit()
