@@ -11,7 +11,7 @@ Counter_Gate = 16
 Serial_In  = 18   # GPIO pin for the SER pin of the shifter
 Serial_CLK = 19   # GPIO pin for the CLK pin of the shifter
 Serial_Load= 20   # GPIO pin for the SH/LD-bar pin of the shifter
-Serial_N   = 24   # Number of bits to shift in. 8 bits for every SN74HC165
+Serial_N   = 8   # Number of bits to shift in. 8 bits for every SN74HC165
 
 def Setup():
     '''Set the RPi to read the shifterers and communucate with the MAX7219 '''
@@ -43,8 +43,8 @@ def LoadAndShift(Nbits=Serial_N):
         bit = GPIO.input(Serial_In)    # First bit is already present on SER after load.
         out <<= 1                      # Shift the out bits one to the left.
         out += bit                     # Add the bit we just read.
-        GPIO.output(Serial_CLK, GPIO.HIGH) # Clock High loads next bit
-        GPIO.output(Serial_CLK, GPIO.LOW)  # Clock Low resets cycle.
+        GPIO.output(Serial_CLK, 1) # Clock High loads next bit
+        GPIO.output(Serial_CLK, 0)  # Clock Low resets cycle.
     return(out)
 
 def Main():
