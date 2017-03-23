@@ -5,3 +5,5 @@ depdir
 *.a
 *.so
 *.o
+# For jupyter notebooks
+.ipynb_checkpoints
