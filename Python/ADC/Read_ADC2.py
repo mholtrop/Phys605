@@ -12,6 +12,10 @@
 # This means that the Phys605 directory is 'one up' from the current
 # direcotry, or in Unix commandline ".."
 #
+# As you can see, moving the details of reading the ADC to a module
+# cleans up the code for this program. The module can now be used in many
+# different programs.
+#
 # Add ".." to the path for reading modules, so the MCP320x module can be found
 import sys
 sys.path.append("..")
@@ -34,8 +38,7 @@ def Main():
     # Binary format: {:0b} prints the value in 1 and 0,
     print "Value: {:4d} (0x{:04X} = 0b{:012b})".format( val,val,val)
 
-    Cleanup()
-
+    # Cleanup() Cleanup is now automatic when the adc class is deleted.
 
 
 # This following bit of code allows you to load this script into Python at the commandline
