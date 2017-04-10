@@ -92,7 +92,7 @@ def ReadADC(self,channel):
 
     GPIO.output(CS_bar,1)  # Unselect the chip.
 
-    return(data
+    return(data)
 
 def Main():
     ''' Example ADC read main function. This will read ONE value from the ADC and print it.'''
