@@ -43,7 +43,7 @@ class MAX7219:
             self.WriteLocChar(0x09,0x00) # Raw mode
 
     def __del__(self):          # This is automatically called when the class is deleted.
-        self.WriteChar(0x0C,0x0) # Turn off
+        self.WriteLocChar(0x0C,0x0) # Turn off
         GPIO.cleanup(self.CLK)
         GPIO.cleanup(self.DATA)
         GPIO.cleanup(self.CS_bar)
