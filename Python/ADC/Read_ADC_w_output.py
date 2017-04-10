@@ -33,10 +33,12 @@ def Main():
     #
     # The MCP320x module contains the class MCP320x, which we initialize here:
     adc = MCP320x(CS_bar_pin=13,CLK_pin=12,MOSI_pin=6,MISO_pin=5,chip="MCP3202")
-    disp = MAX7219(CLK_pin=23,DATA_pin=24,CS_bar_pin=25)
     #
     # Now "adc" is an MCP320x class object, that can read the ADC for us.
     #
+    # The MAX7219 class controls an 8 digit LED display.
+    disp = MAX7219(CLK_pin=23,DATA_pin=24,CS_bar_pin=25)
+
     count=0
     loc=0
     #
@@ -51,14 +53,18 @@ def Main():
 
     while True:
         val = adc.ReadADC(0)   # Read the data from the analog input number 0.
+        # If you want to write the integer value on the MAX7219 display.
+        # disp.WriteInt(val)
+
         vdata[loc] = val
         loc += 1
+        count += 1
 
-        if loc == len(vdata):
+        if loc == len(vdata):  # At the end of the buffer, so cicle back.
             loc=0
-        # Write the value on the MAX7219 display.
-        # disp.WriteInt(val)
-        if loc%10==0:
+
+        if count>=100:          # Every N update the display.
+            count=0
             vavg=np.average(vdata)
             vstd=np.std(vdata)
             volts = (vavg/4095.)*3.301
