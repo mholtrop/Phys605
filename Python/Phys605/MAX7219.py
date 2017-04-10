@@ -96,20 +96,20 @@ class MAX7219:
             else:
                 self.WriteLocChar(i+1,d)
 
-    def WriteFloat(self,f):
+    def WriteFloat(self,f,form='{:9.6f}'):
         '''Write a floating point number. Trying to use a reasonable format '''
-        s = "{:9.8g}".format(f)
-        #print("Trying to write ",s," len=",len(s))
-        if s.count('e')>0 or f<0.01:          # Too big or small for x.x format.
-            s = "{:9.4e}".format(f)
+        s = form.format(f)
         loc = 1
         highbit=0
-        rev = reversed(s[0:8+s.count('.')+s.count('e')])
-        for c in rev: #Start with the lowest number first.
-            if c == '.':
+        rev = reversed(s[0:8+s.count('.')+s.count('e')]) # Read the letters reversed, starting at the end.
+#        print("Trying to write [{}] len={}".format(s,len(s)))
+#        rev_test=""
+        for c in rev:       # Get each of the numbers/symbols, starting with the rightmost.
+#            rev_test += c
+            if c == '.':    # If it is the period, then set bit7 but don't count as a digit.
                 highbit=1
             else:
-                if c.isdigit():
+                if c.isdigit():  # It is a digit.
                     i = int(c)
                     i += highbit<<7
                     self.WriteLocChar(loc,i)
@@ -132,3 +132,8 @@ class MAX7219:
                 else:
                     print("Bad char in string: ",c)
                 highbit=0
+        while loc<9:                    # Fill the end with blanks
+            self.WriteLocChar(loc,0x0F) # Write blank
+            loc += 1
+
+#        print("Wrote:          [{}] len={}".format(rev_test,len(rev_test)))
