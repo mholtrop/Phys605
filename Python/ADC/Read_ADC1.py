@@ -1,4 +1,4 @@
-#!/usr/env python
+#!/usr/bin/env python
 #
 # Phys605  Digital Lab 6
 #
