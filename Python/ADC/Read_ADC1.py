@@ -34,10 +34,10 @@ def Init():
 
 def Cleanup():
     ''' Cleanup the GPIO before being destroyed '''
-    GPIO.cleanup(self.CS_bar)
-    GPIO.cleanup(self.CLK)
-    GPIO.cleanup(self.MOSI)
-    GPIO.cleanup(self.MISO)
+    GPIO.cleanup(CS_bar)
+    GPIO.cleanup(CLK)
+    GPIO.cleanup(MOSI)
+    GPIO.cleanup(MISO)
 
 def SendBit(bit):
     ''' Send out a single bit, and pulse clock.'''
@@ -48,7 +48,7 @@ def SendBit(bit):
     GPIO.output(CLK,1)    # Rising edge sends data
     GPIO.output(CLK,0)    # Return clock to zero.
 
-def ReadBit(self):
+def ReadBit():
     ''' Read a single bit from the ADC and pulse clock.'''
     #
     # The output is going out on the falling edge of the clock!
@@ -58,7 +58,7 @@ def ReadBit(self):
     bit = GPIO.input(MISO) # Read the bit.
     return(bit)
 
-def ReadADC(self,channel):
+def ReadADC(channel):
     '''This reads the actual ADC value, after connecting the analog multiplexer to
     channel.
     ADC value is returned at a n-bit integer value, with n=10 or 12 depending on the chip.'''
