@@ -54,8 +54,8 @@ def ReadBit():
     # The output is going out on the falling edge of the clock!
     #
     GPIO.output(CLK,1) # Set the clock highbit
-    GPIO.output(CLK,0) # Falling clock receives data.
     bit = GPIO.input(MISO) # Read the bit.
+    GPIO.output(CLK,0) # Falling clock receives data.
     return(bit)
 
 def ReadADC(channel):
@@ -79,6 +79,7 @@ def ReadADC(channel):
     SendBit(int( (channel & 0b100)>0) ) # Send high bit of channel = DS2
     SendBit(int( (channel & 0b010)>0) ) # Send mid  bit of channel = DS1
     SendBit(int( (channel & 0b001)>0) ) # Send low  bit of channel = DS0
+    SendBit(1)                          # Dummy high
     SendBit(1)                          # Dummy high
 
     # The clock is currently low, and the dummy bit = 0 is on the ouput of the ADC
