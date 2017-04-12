@@ -8,10 +8,14 @@
 # This code does not use the SPI interface of the RPI, instead it uses
 # regular GPIO ports. Doing this is colloquially called "bit-banging".
 #
-# The SPI protocol simulated here is MODE=0, which has a positive polarity clock,
-# (the clock is 0 at rest) and a positive (0 to 1 transition) edge for reading
+# The SPI protocol simulated here is MODE=0, CPHA=0, which has a positive polarity clock,
+# (the clock is 0 at rest, active at 1) and a positive phase (0 to 1 transition) for reading
 # or writing the data. Thus corresponds to the specifications of the MCP320x chips.
 #
+# From MCP3208 datasheet:
+# Outging data : MCU latches data to A/D converter on rising edges of SCLK
+# Incoming data: Data is clocked out of A/D converter on falling edges, so should be read on rising edge.
+
 import RPi.GPIO as GPIO
 import time
 
@@ -88,11 +92,14 @@ class MCP320x:
     def ReadBit(self):
         ''' Read a single bit from the ADC and pulse clock.'''
         #
-        # The output is going out on the falling edge of the clock!
-        #
-        GPIO.output(self.CLK,1) # Set the clock highbit
-        GPIO.output(self.CLK,0) # Falling clock receives data.
+        # The output is going out on the falling edge of the clock,
+        # and is to be read on the rising edge of the clock.
+
+        # Clock should be already low, and data should already be set.
+        GPIO.output(self.CLK,1) # Set the clock high. Ready to read.
         bit = GPIO.input(self.MISO) # Read the bit.
+        GPIO.output(self.CLK,0) # Return clock low, next bit will be set.
+
         return(bit)
 
 
@@ -111,6 +118,8 @@ class MCP320x:
         #
         # Start of sequence sets CS_bar low, and sends sequence
         #
+        GPIO.output(self.CLK,0)                # Make sure clock starts low.
+        GPIO.output(self.MOSI,0)
         GPIO.output(self.CS_bar,0)             # Select the chip.
         self.SendBit(1)                        # Start bit = 1
         self.SendBit(self.Single_ended_mode)   # Select single or differential
@@ -120,11 +129,11 @@ class MCP320x:
             self.SendBit(int( (channel & 0b001)>0) ) # Send low  bit of channel = DS0
         else:
             self.SendBit(channel)
-        self.SendBit(1)                       # MSB
+        self.SendBit(1)                       # MSB First (for MCP3x02) or don't care.
 
         # The clock is currently low, and the dummy bit = 0 is on the ouput of the ADC
         #
-        dummy = GPIO.input(self.MISO) # Read the bit.
+        dummy = self.ReadBit() # Read the bit.
         #if dummy != 0:
         #    print "We expected a 0, dummy bit but we got a 1. Something is wrong here."
         data = 0

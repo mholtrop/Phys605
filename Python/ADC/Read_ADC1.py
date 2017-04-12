@@ -25,7 +25,7 @@ def Init():
 
     GPIO.setup(CLK,GPIO.OUT)
     GPIO.setup(MOSI,GPIO.OUT)
-    GPIO.setup(MISO,GPIO.IN)
+    GPIO.setup(MISO,GPIO.IN,pull_up_down=GPIO.PUD_DOWN)
     GPIO.setup(CS_bar,GPIO.OUT)
 
     GPIO.output(CLK,0)
@@ -53,9 +53,9 @@ def ReadBit():
     #
     # The output is going out on the falling edge of the clock!
     #
-    GPIO.output(CLK,1) # Set the clock highbit
+    GPIO.output(CLK,1) # Set the clock to high, data is latched.
     bit = GPIO.input(MISO) # Read the bit.
-    GPIO.output(CLK,0) # Falling clock receives data.
+    GPIO.output(CLK,0) # Falling clock tells A/D to set next bit.
     return(bit)
 
 def ReadADC(channel):
@@ -69,10 +69,12 @@ def ReadADC(channel):
     # 1 - start bit
     # 2 - Single ended (1) or differantial (0) mode
     # 3 - Channel select: 3 bits
-    # 4 - MSB first (1) or LSB first (0)
+    # 4 - Dummy 1 bit
     #
     # Start of sequence sets CS_bar low, and sends sequence
     #
+    GPIO.output(CLK,0)                # Make sure clock starts low.
+    GPIO.output(MOSI,0)
     GPIO.output(CS_bar,0)             # Select the chip.
     SendBit(1)                        # Start bit = 1
     SendBit(Single_ended_mode)   # Select single or differential
@@ -80,11 +82,10 @@ def ReadADC(channel):
     SendBit(int( (channel & 0b010)>0) ) # Send mid  bit of channel = DS1
     SendBit(int( (channel & 0b001)>0) ) # Send low  bit of channel = DS0
     SendBit(1)                          # Dummy high
-    SendBit(1)                          # Dummy high
 
     # The clock is currently low, and the dummy bit = 0 is on the ouput of the ADC
     #
-    dummy = GPIO.input(MISO) # Read the bit.
+    dummy = ReadBit() # Read the dummy bit, or null bit.
     data = 0
     for i in range(Bit_length):
         data <<= 1                     # Note you need to shift left first, or else you shift the last bit (bit 0) to the 1 position.
@@ -100,12 +101,25 @@ def Main():
     #
     # Clearly, you would need to change this part to suit your needs.
     #
-    Init()              # Load data into the shifters.
-    val = ReadADC(0)   # Read the data from the analog input number 0.
 
-    # Print the value in decimal, hexadecimal, and binary format.
-    # Binary format: {:0b} prints the value in 1 and 0,
-    print "Value: {:4d} (0x{:04X} = 0b{:012b})".format( val,val,val)
+    # Define "input" to be Python2 and Python3 compatible.
+    try:
+        input = raw_input
+    except NameError:
+        pass
+
+
+    Init()              # Load data into the shifters.
+    c = ' '
+    print("Press enter to read the ADC channels, q<enter> to quit.")
+    while c != 'q' and c != 'Q':
+        c=input('...')
+
+        for ch in range(Channel_max):
+            val = ReadADC(ch)   # Read the data from the analog input number 0.
+            # Print the value in decimal, hexadecimal, and binary format.
+            # Binary format: {:0b} prints the value in 1 and 0,
+            print "Ch: {:2d} Value: {:4d} (0x{:04X} = 0b{:012b})".format(ch,val,val,val)
 
     Cleanup()
 
