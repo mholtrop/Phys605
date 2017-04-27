@@ -100,7 +100,7 @@ class MCP320xspi:
         '''This reads the actual ADC value of channel 0, with as little overhead as possible.
         returns: The ADC value as an n-bit integer value, with n=10 or 12 depending on the chip.'''
 
-        dat = dev.xfer(self._control0)
+        dat = self._dev.xfer(self._control0)
         value= (dat[1]<<8)+dat[2]
         return(value)
 
