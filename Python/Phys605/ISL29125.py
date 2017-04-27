@@ -8,7 +8,7 @@
 
 import smbus
 
-class ISL2915:
+class ISL29125:
 
     # Constants from the DATA SHEET.
     # Following the Sparkfun Arduino Driver names.
