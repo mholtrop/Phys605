@@ -23,8 +23,25 @@ DEPDIR = depdir
 INC= -I${AVR_HOME}/include -I${AVR_HOME}/include/variants/$(BOARD_TYPE) $(EXTRA_INCLUDES)
 
 # libraries to link in (e.g. -lmylib)
-LIBS= -Wl,-u,vfprintf -lprintf_flt -lm -lc -L${AVR_HOME}/lib/$(SYSTEM_TYPE) -larduino  -larduinoutil $(EXTRA_LIBS)
-#LIBS= -Wl,-u,vfprintf -lprintf_flt -lm -lc 
+#
+# Fairly comprehensive LIBS definition.
+#
+ifndef LIBS
+#$(warning LIBS was not set)
+LIBS = -L${AVR_HOME}/lib/$(SYSTEM_TYPE) -larduinoutil -larduino  $(EXTRA_LIBS) -lm -lc
+endif
+
+# In you Makefile you cal set alternates:
+# Simple Arduino:
+#LIBS= -L${AVR_HOME}/lib/$(SYSTEM_TYPE)  -larduino  
+# No Ardiono and no output at all, saves about 3k to 4k in space.
+#LIBS= -lc
+#
+# For printf: 
+# -Wl,-u,vfprintf -lprintf_min      # Minimalist version
+# -Wl,-u,vfprintf -lprintf_flt -lm  # Floating point version
+# -Wl,-u,vfscanf -lscanf_min        # Minimalist scanf version
+# -Wl,-u,vfscanf -lscanf_flt        # Floating point scanf version
 
 ##### ADDED Flags ####
 
@@ -99,7 +116,7 @@ OPTIMIZE = -O$(OPTLEVEL)
 endif
 
 # compiler
-CFLAGS +=$(OPTIMIZE) -mmcu=$(MCU) -DF_CPU=$(F_CPU) \
+CFLAGS +=$(OPTIMIZE) -mmcu=$(MCU) -DF_CPU=$(F_CPU) -DBAUD=$(BAUD) $(OTHER_DEFINES) \
 	-fpack-struct -fshort-enums             \
 	-funsigned-bitfields -funsigned-char    \
 	-Wall -Wstrict-prototypes               \
@@ -107,7 +124,7 @@ CFLAGS +=$(OPTIMIZE) -mmcu=$(MCU) -DF_CPU=$(F_CPU) \
 #	$(filter %.lst, $(<:.c=.lst)))
 
 # c++ specific flags
-CXXFLAGS +=$(OPTIMIZE) -mmcu=$(MCU)  -DF_CPU=$(F_CPU) \
+CXXFLAGS +=$(OPTIMIZE) -mmcu=$(MCU)  -DF_CPU=$(F_CPU) -DBAUD=$(BAUD)  $(OTHER_DEFINES) \
 	-fno-exceptions 		           \
 	-fpack-struct -fshort-enums     	   \
 	-funsigned-bitfields -funsigned-char       \
@@ -125,7 +142,6 @@ ASMFLAGS +=  -mmcu=$(MCU)        \
 
 # linker
 LDFLAGS=-Wl,-Map,$(TARGET).map -mmcu=$(MCU) 
-
 
 
 
@@ -282,8 +298,8 @@ clean:
 distclean: clean
 	@echo "---- Nothing else to remove? ----"
 
-#-include $(CFILES:%.c=$(DEPDIR)/%.d)
-#-include $(CPPFILES:%.cpp=$(DEPDIR)/%.d)
-#-include $(CXXFILES:%.cxx=$(DEPDIR)/%.d)
-#-include $(CCFILES:%.cc=$(DEPDIR)/%.d)
+-include $(CFILES:%.c=$(DEPDIR)/%.d)
+-include $(CPPFILES:%.cpp=$(DEPDIR)/%.d)
+-include $(CXXFILES:%.cxx=$(DEPDIR)/%.d)
+-include $(CCFILES:%.cc=$(DEPDIR)/%.d)
 
