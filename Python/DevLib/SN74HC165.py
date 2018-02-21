@@ -63,6 +63,12 @@ class SN74HC165:
         GPIO.setup(Serial_Load, GPIO.OUT)
         GPIO.output(Serial_Load,GPIO.HIGH)  # Load is High = ready to shift. Low = load data.
         GPIO.output(Serial_CLK, GPIO.LOW)
+        
+        #Only occurs when the program inits successfully
+        self.log.info('Serial In: {}'.format(self.Serial_In))
+        self.log.info('Serial CLK: {}'.format(self.Serial_CLK))
+        self.log.info('Serial Load: {}'.format(self.Serial_Load))
+        self.log.info('Serial N: {}'.format(self.Serial_N))
 
     def __del__(self):          # This is automatically called when the class is deleted.
         '''Delete and cleanup.'''
@@ -72,6 +78,8 @@ class SN74HC165:
         ''' Load the parallel data into the shifter by toggling Serial_Load low '''
         GPIO.output(self.Serial_Load,GPIO.LOW)
         GPIO.output(self.Serial_Load,GPIO.HIGH)
+        self.log.info('Shifter Loaded')
+        self.log.info('GPIO Output Loaded on {}'.format(self.Serial_Load))
 
     def Read_Data(self):
         ''' Shift the data into the shifter and return the obtained value.
@@ -86,11 +94,14 @@ class SN74HC165:
         out=0
         for i in range(self.Serial_N):        # Run the loop shift_n times.
             bit = GPIO.input(self.Serial_In)  # First bit is already present on Q after load.
+            self.log.info('BIT LOADED: {}'.format(bit))
             out <<= 1                         # Shift the bits in "out" one position to the left.
             out += bit                        # Add the bit we just read in the LSB location of out.
             GPIO.output(self.Serial_CLK, GPIO.HIGH) # Clock High loads next bit into Q of chip.
             GPIO.output(self.Serial_CLK, GPIO.LOW)  # Clock back to low, rest state.
-
+            
+        self.log.info('DATA READ COMPLETE')
+        self.log.info('Shifted Data: {}'.format(out))
         return(out)                        # Return the data.
 #
 # The code below turns this module into a program as well
@@ -107,7 +118,7 @@ def main(argv):
     S = SN74HC165(18,19,20,8)
     S.Load_Shifter()
     num = S.Read_Data()
-    print(num)
+    S.log.info(num)
 
 if __name__ == '__main__':
     main(sys.argv)
