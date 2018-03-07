@@ -4,13 +4,18 @@
 # The MAX7219 is an LED driver that can steer 8x 7-segment numerical display, or
 # an 8x8 Matrix of LEDs.
 #
-
+# Author: Maurik Holtrop
+#
 import RPi.GPIO as GPIO
 import time
 
 class MAX7219:
-
     def __init__(self,CLK_pin,DATA_pin,CS_bar_pin):
+        '''This class helps with driving a MAX7219 LED module using regular GPIO pins.
+        You need to initialze the class with the pin numbers for the Clock (clk),
+        Data(dat), and Chip Select bar (cs_bar) pins. This code expects
+        the numbers in the BSM standard.
+        The Raspberry Pi interfacing is done through the RPi.GPIO module.'''
         self.CLK = CLK_pin
         self.DATA = DATA_pin
         self.CS_bar = CS_bar_pin
@@ -29,7 +34,8 @@ class MAX7219:
         self.Init(1)
 
     def Init(self,mode):
-        ''' Initialize the MAX7219 Chip. Mode=1 is for numbers, mode=2 is no-decode'''
+        ''' Initialize the MAX7219 Chip. Mode=1 is for numbers, mode=2 is no-decode.
+        This will send an initialization sequence to the chip.'''
         self.WriteLocChar(0x0F,0x01) # Test ON
         time.sleep(0.5)
         self.WriteLocChar(0x0F,0x00) # Test OFF
@@ -43,13 +49,15 @@ class MAX7219:
             self.WriteLocChar(0x09,0x00) # Raw mode
 
     def __del__(self):          # This is automatically called when the class is deleted.
+    '''Delete and cleanup.'''
         self.WriteLocChar(0x0C,0x0) # Turn off
         GPIO.cleanup(self.CLK)
         GPIO.cleanup(self.DATA)
         GPIO.cleanup(self.CS_bar)
 
     def WriteData(self,data):
-        '''Write the 16 bit data to the output '''
+        '''Write the 16 bit data to the output. This is a "raw" mode write, used
+        internally in these methods.'''
         GPIO.output(self.CS_bar,0)
 
         for i in range(16):  # send out 16 bits.
@@ -80,7 +88,7 @@ class MAX7219:
         self.WriteData(out)
 
     def WriteInt(self,n):
-        ''' Write the integer n on the display '''
+        ''' Write the integer n on the display, shifted left.'''
         if n > 99999999:
             for i in range(8):
                 WriteChar(i+1,0x0A)
