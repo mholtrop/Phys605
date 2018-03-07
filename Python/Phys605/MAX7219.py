@@ -10,7 +10,7 @@ import RPi.GPIO as GPIO
 import time
 
 class MAX7219:
-    def __init__(self,CLK_pin,DATA_pin,CS_bar_pin):
+    def __init__(self,CLK_pin,DATA_pin,CS_bar_pin,mode=1):
         '''This class helps with driving a MAX7219 LED module using regular GPIO pins.
         You need to initialze the class with the pin numbers for the Clock (clk),
         Data(dat), and Chip Select bar (cs_bar) pins. This code expects
@@ -31,11 +31,12 @@ class MAX7219:
         GPIO.output(self.DATA,0)
         GPIO.output(self.CS_bar,1)
 
-        self.Init(1)
+        self.Init(mode)
 
     def Init(self,mode):
         ''' Initialize the MAX7219 Chip. Mode=1 is for numbers, mode=2 is no-decode.
-        This will send an initialization sequence to the chip.'''
+        This will send an initialization sequence to the chip.
+        With an __init__ this method is already called.'''
         self.WriteLocChar(0x0F,0x01) # Test ON
         time.sleep(0.5)
         self.WriteLocChar(0x0F,0x00) # Test OFF
@@ -48,12 +49,20 @@ class MAX7219:
         else:
             self.WriteLocChar(0x09,0x00) # Raw mode
 
+        Clear()
+
     def __del__(self):          # This is automatically called when the class is deleted.
         '''Delete and cleanup.'''
         self.WriteLocChar(0x0C,0x0) # Turn off
         GPIO.cleanup(self.CLK)
         GPIO.cleanup(self.DATA)
         GPIO.cleanup(self.CS_bar)
+
+    def Clear(self):
+        '''Clear the display to all blanks. (it looks off) '''
+        for i in range(8):
+            self.WriteLocChar(i+1,0x0F) # Blank
+
 
     def WriteData(self,data):
         '''Write the 16 bit data to the output. This is a "raw" mode write, used
@@ -91,7 +100,7 @@ class MAX7219:
         ''' Write the integer n on the display, shifted left.'''
         if n > 99999999:
             for i in range(8):
-                WriteChar(i+1,0x0A)
+                self.WriteLocChar(i+1,0x0A)
             return
 
         for i in range(8):
@@ -145,3 +154,7 @@ class MAX7219:
             loc += 1
 
 #        print("Wrote:          [{}] len={}".format(rev_test,len(rev_test)))
+
+    def __str__(self):
+        '''Write something comforting to the user :-) '''
+        print("")
