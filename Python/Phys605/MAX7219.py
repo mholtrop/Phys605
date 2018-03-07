@@ -49,7 +49,7 @@ class MAX7219:
         else:
             self.WriteLocChar(0x09,0x00) # Raw mode
 
-        Clear()
+        self.Clear()
 
     def __del__(self):          # This is automatically called when the class is deleted.
         '''Delete and cleanup.'''
