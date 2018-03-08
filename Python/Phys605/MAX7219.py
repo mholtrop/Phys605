@@ -19,6 +19,7 @@ class MAX7219:
         self.CLK = CLK_pin
         self.DATA = DATA_pin
         self.CS_bar = CS_bar_pin
+        self.Mode = mode
 
         if GPIO.getmode() != 11:
             GPIO.setmode(GPIO.BCM)
@@ -45,8 +46,10 @@ class MAX7219:
         self.WriteLocChar(0x0A,0x0B) # Quite bright
         self.WriteLocChar(0x0C,1) # Set for normal operation.
         if mode == 1:
+            self.Mode=1
             self.WriteLocChar(0x09,0xFF) # Decode mode
         else:
+            self.Mode=0
             self.WriteLocChar(0x09,0x00) # Raw mode
 
         self.Clear()
@@ -61,12 +64,19 @@ class MAX7219:
     def Clear(self):
         '''Clear the display to all blanks. (it looks off) '''
         for i in range(8):
-            self.WriteLocChar(i+1,0x0F) # Blank
+            if self.Mode == 1:
+                self.WriteLocChar(i+1,0x0F) # Blank
+            else:
+                self.WriteLocChar(i+1,0x00) # Blank
 
+    def SetBrightness(self,B):
+        '''Set the display brightness to B, where 0<=B<16'''
+        B = B & 0x0F
+        self.WriteLocChar(0x0A,B) # Set brightness
 
     def WriteData(self,data):
-        '''Write the 16 bit data to the output. This is a "raw" mode write, used
-        internally in these methods.'''
+        '''Write the 16 bit data to the output using "bit-banged" SPI on the GPIO output line.
+        This is a "raw" mode write, used internally in these methods.'''
         GPIO.output(self.CS_bar,0)
 
         for i in range(16):  # send out 16 bits.
@@ -89,32 +99,52 @@ class MAX7219:
 
     def WriteLocChar(self,loc,dat):
         '''Write dat to loc. If the mode is 1 then dat is a number and loc is the location.
-        If mode is 2 then dat is an 8 bit LED position.'''
-
+        If mode is 2 then dat is an 8 bit LED position.
+        This is used internally to display the numbers/characters.'''
         out = (loc <<8)
         out += dat
         #out += 0b0000000000000000  # Dummy bits
         self.WriteData(out)
 
     def WriteInt(self,n):
-        ''' Write the integer n on the display, shifted left.'''
-        if n > 99999999:
+        ''' Write the integer n on the display, shifted left. If n is larger (smaller) than
+        fits, an overflow is indicated by all dash.'''
+
+        if mode != 1:
+            raise ValueError();
+
+        if n > 99999999 or n< -9999999: # Display overflow, --------
             for i in range(8):
                 self.WriteLocChar(i+1,0x0A)
             return
 
+        if n < 0:
+            negative=True
+            n= -n
+        else:
+            negative=False
         for i in range(8):
             n,d = divmod(n,10)
             if n==0 and d == 0:
                 if i==0:
                     self.WriteLocChar(i+1,0x0)  # 0
                 else:
-                    self.WriteLocChar(i+1,0x0F) # Blank
+                    if negative:
+                        self.WriteLocChar(i+1,0x0A)
+                        negative=False
+                    else:
+                        self.WriteLocChar(i+1,0x0F) # Blank
             else:
                 self.WriteLocChar(i+1,d)
 
     def WriteFloat(self,f,form='{:9.6f}'):
-        '''Write a floating point number. Trying to use a reasonable format '''
+        '''Write a floating point number. Trying to use a reasonable format.
+        You can specify the format with the form= argument, using the python
+        style, to use with form="{:4.2f}" or form="{:8.4e}" '''
+
+        if mode != 1:
+            raise ValueError();
+
         s = form.format(f)
         loc = 1
         highbit=0
@@ -153,8 +183,7 @@ class MAX7219:
             self.WriteLocChar(loc,0x0F) # Write blank
             loc += 1
 
-#        print("Wrote:          [{}] len={}".format(rev_test,len(rev_test)))
 
     def __str__(self):
         '''Write something comforting to the user :-) '''
-        print("")
+        print("MAX7219 driver interface. CS_bar={} CLK={} DATA={}",self.CS_bar_pin,self.CLK_pin,self.DATA_pin)
