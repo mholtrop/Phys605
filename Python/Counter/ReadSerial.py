@@ -29,7 +29,7 @@ GPIO.setmode(GPIO.BCM)  # Set the numbering scheme to correspond to numbers on P
 Serial_In  = 18   # = MISO  - GPIO pin for the SER (serial out) pin of the shifter
 Serial_CLK = 19   # = CLK   - GPIO pin for the CLK (clock) pin of the shifter
 Serial_Load= 20   # =       - GPIO pin the SH/LD-bar pin of the shifter.
-Serial_N   = 24   # Number of bits to shift in. 8 bits for every SN74HC165
+Serial_N   = 8   # Number of bits to shift in. 8 bits for every SN74HC165
 # If you connect 2 or more SN74HC165 chips together, you need to increment Serial_N
 # accordingly. Also, if you are not filling all the bits of the SN74HC165.
 #

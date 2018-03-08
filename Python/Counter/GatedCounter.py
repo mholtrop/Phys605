@@ -1,5 +1,29 @@
 #!/usr/bin/env python
-
+#
+# This is a test code is intended to readout an SN74HC165 chip.
+# Author: Maurik Holtrop
+#
+# Basic operation:
+#  1) Setup the GPIO input and output ports.
+#  2) Send a counter clear signal on the Counter_Clear pin.
+#  3) Open the AND (or NAND) gate to the counter clock. (See notes)
+#  4) Wait, or run code to be timed.
+#  5) Close the AND gate.
+#  6) Send a Load signal to the SN74HC165 chip on Serial_Load.
+#  7) Readout the SN74HC165 for Serial_N clocks on Serial_CLK by loading the
+#     bits from the Serial_In.
+#  8) Print the resulting number to the screen.
+#
+# Notes:
+#     * When using the SN74HC193 chip for counting, you can gate by
+#       sending the Counter_Gate signal to the "down" clock, and the Clock
+#       to be counted to the "up" clock.
+#     * When using the SN74HC4040 chip, add a NAND gate to the CLK input.
+#       One input of the NAND gate goes to the Counter_Gate, the another
+#       to the clock to be counted.
+#
+# See also the ReadSerial.py code.
+#
 import RPi.GPIO as GPIO
 import time
 import sys
@@ -52,20 +76,19 @@ def Main():
     Setup()
     print "counting."
     sys.stdout.flush()
-    i=0
-    while i < 1000:
+    for i in range(100):
         GPIO.output(Counter_Clear,1) # Clear the counter.
         GPIO.output(Counter_Clear,0) # Counter ready to count.
         GPIO.output(Counter_Gate,1)  # Start the counter
-        x = 0                        # Do something we want to time.
-        for j in range(1000):
-            x=x+j
-        i += 1
+        # x = 0                        # Do something we want to time.
+        # for j in range(1000):
+        #     x=x+j
+        time.sleep(1.)               # Sleep for 1 second while the counter counts.
         GPIO.output(Counter_Gate,0) # Stop the counter.
         count = LoadAndShift(24)
-        print "{:04d}, {:6d}".format(i,count)
+        print("{:04d}, {:6d}".format(i,count)) # Print the itteration and the counts.
         sys.stdout.flush()
-        time.sleep(0.01)
+        time.sleep(1.)              # Wait a sec before starting again.
 
     Cleanup()
 
