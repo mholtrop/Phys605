@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 ####################################################################
-#  GPIOSerial
+#  SN74HC165
 #  Author: Maurik Holtrop
 ####################################################################
 #
-# This is a simple Python module to read out a serial shift register,
+# This is a simple Python module to read out a serial shift register SN74HC165,
 # or PISO register (Parallel-In Serial-Out), using the RPi.
 # The code implements a single ended "Bit-Bang" SPI interface.
 # SPI = serial peripheral interface: see https://en.wikipedia.org/wiki/Serial_Peripheral_Interface_Bus
@@ -17,8 +17,9 @@
 
 import RPi.GPIO as GPIO  # Setup the GPIO for RPi
 import time
+import sys
 
-class GPIOSerial:
+class SN74HC165:
 
     def __init__(self,Serial_In,Serial_CLK,Serial_Load,Serial_N=8):
         '''Initialize the module.
@@ -29,7 +30,7 @@ class GPIOSerial:
          * Serial_N   = number of bits to read, default=8
          '''
         GPIO.setmode(GPIO.BCM)  # Set the numbering scheme to correspond to numbers on Pi Wedge.
-        self.Serial_In  = Serial_in  # = MISO - GPIO pin for the Q (serial out) pin of the shifter
+        self.Serial_In  = Serial_In  # = MISO - GPIO pin for the Q (serial out) pin of the shifter
         self.Serial_CLK = Serial_CLK # = CLK  - GPIO pin for the CLK (clock) pin of the shifter
         self.Serial_Load= Serial_Load# = Load - GPIO pin the SH/LD-bar pin of the shifter.
         self.Serial_N   = Serial_N   # Number of bits to shift in. 8 bits for every SN74HC165.
@@ -42,12 +43,19 @@ class GPIOSerial:
         GPIO.output(Serial_Load,GPIO.HIGH)  # Load is High = ready to shift. Low = load data.
         GPIO.output(Serial_CLK, GPIO.LOW)
 
+    def __del__(self):          # This is automatically called when the class is deleted.
+        '''Delete and cleanup.'''
+        GPIO.cleanup(self.Serial_In)
+        GPIO.cleanup(self.Serial_CLK)
+        GPIO.cleanup(self.Serial_Load)
+
+
     def Load_Shifter(self):
         ''' Load the parallel data into the shifter by toggling Serial_Load low '''
         GPIO.output(self.Serial_Load,GPIO.LOW)
         GPIO.output(self.Serial_Load,GPIO.HIGH)
 
-    def Read_Data():
+    def Read_Data(self):
         ''' Shift the data into the shifter and return the obtained value.
         The bits are expected to come as Most Significant Bit (MSB) First
         to Least Significant Bit (LSB) last.
@@ -78,7 +86,10 @@ def main(argv):
     Serial_CLK = 19
     Serial_Load= 20
     '''
-    print(len(argv),argv)
+    S = SN74HC165(18,19,20,8)
+    S.Load_Shifter()
+    num = S.Read_Data()
+    print(num)
 
 if __name__ == '__main__':
     main(sys.argv)
