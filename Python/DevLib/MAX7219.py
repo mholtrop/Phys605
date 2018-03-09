@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 #
 # This module will steer a MAX7219 chip.
 #
@@ -10,15 +11,15 @@ import RPi.GPIO as GPIO
 import time
 
 class MAX7219:
-    def __init__(self,CLK_pin,DATA_pin,CS_bar_pin,mode=1):
+    def __init__(self,DATA_pin,CS_bar_pin,CLK_pin,mode=1):
         '''This class helps with driving a MAX7219 LED module using regular GPIO pins.
         You need to initialze the class with the pin numbers for the Clock (clk),
         Data(dat), and Chip Select bar (cs_bar) pins. This code expects
         the numbers in the BSM standard.
         The Raspberry Pi interfacing is done through the RPi.GPIO module.'''
-        self.CLK = CLK_pin
         self.DATA = DATA_pin
         self.CS_bar = CS_bar_pin
+        self.CLK = CLK_pin
         self.Mode = mode
 
         if GPIO.getmode() != 11:
@@ -187,3 +188,27 @@ class MAX7219:
     def __str__(self):
         '''Write something comforting to the user :-) '''
         print("MAX7219 driver interface. CS_bar={} CLK={} DATA={}",self.CS_bar_pin,self.CLK_pin,self.DATA_pin)
+
+#
+# The code below turns this module into a program as well
+# allowing you to run it in test mode from the command line.
+#
+def main(argv):
+    '''Test the functioning of the module displaying
+    the number 12345678, and then counting down.
+    The code will use:
+    Data pin   = 4
+    CS_bar pin = 5
+    CLK pin    = 6
+    '''
+    M = MAX7219(4,5,6)
+    num = 12345678
+    M.WriteInt(num)
+    time.sleep(1)
+    for i in range(num,0,-1):
+        M.WriteInt(i)
+        time.sleep(0.01)
+
+if __name__ == '__main__':
+    import sys
+    main(sys.argv)
