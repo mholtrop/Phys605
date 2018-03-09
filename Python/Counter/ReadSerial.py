@@ -71,7 +71,7 @@ def Read_Data(shift_n):
     return(out)                        # Return the data.
 
 def Main():
-    ''' Example main function. This will read ONE value from the shifter and print it.'''
+    ''' Example main function. This will read ONE value from the shifter and print it, then quit.'''
     #
     # Clearly, you would need to change this part to suit your needs.
     #
