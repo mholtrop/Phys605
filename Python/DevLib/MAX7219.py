@@ -110,7 +110,7 @@ class MAX7219:
         ''' Write the integer n on the display, shifted left. If n is larger (smaller) than
         fits, an overflow is indicated by all dash.'''
 
-        if mode != 1:
+        if self.Mode != 1:
             raise ValueError();
 
         if n > 99999999 or n< -9999999: # Display overflow, --------
@@ -142,7 +142,7 @@ class MAX7219:
         You can specify the format with the form= argument, using the python
         style, to use with form="{:4.2f}" or form="{:8.4e}" '''
 
-        if mode != 1:
+        if self.Mode != 1:
             raise ValueError();
 
         s = form.format(f)

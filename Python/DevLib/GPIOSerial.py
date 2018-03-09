@@ -20,7 +20,7 @@ import time
 
 class GPIOSerial:
 
-    __init__(self,Serial_In,Serial_CLK,Serial_Load,Serial_N=8):
+    def __init__(self,Serial_In,Serial_CLK,Serial_Load,Serial_N=8):
         '''Initialize the module.
         Input:
          * Serial_in  = GPIO pin for the input data bit, connect to the Q output of the chip.
