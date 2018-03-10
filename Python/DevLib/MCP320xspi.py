@@ -5,12 +5,9 @@
 # Communications with this chip are over the SPI protocol.
 # See: https://en.wikipedia.org/wiki/Serial_Peripheral_Interface_Bus
 #
-# This code does not use the SPI interface of the RPI, instead it uses
-# regular GPIO ports. Doing this is colloquially called "bit-banging".
-#
-# The SPI protocol simulated here is MODE=0, CPHA=0, which has a positive polarity clock,
+# The SPI protocol needed is MODE=0, CPHA=0, which has a positive polarity clock,
 # (the clock is 0 at rest, active at 1) and a positive phase (0 to 1 transition) for reading
-# or writing the data. Thus corresponds to the specifications of the MCP320x chips.
+# or writing the data. This corresponds to the specifications of the MCP320x chips.
 #
 # From MCP3208 datasheet:
 # Outging data : MCU latches data to A/D converter on rising edges of SCLK
@@ -21,13 +18,13 @@ import time
 
 class MCP320xspi:
 
-    def __init__(self,devnum=0,channum=0,speed=1000000,single_ended=1,chip='MCP3202'):
+    def __init__(self,bus=0,device=0,speed=1000000,single_ended=1,chip='MCP3202'):
         '''Initialize the code and set the GPIO pins.
         The last argument, ch_max, is 2 for the MCP3202, 4 for the
         MCP3204 or 8 for the MCS3208'''
 
-        self._devnum = devnum
-        self._channum= channum
+        self._busnum = bus
+        self._devnum = device
         self._single_ended=single_ended
 
         if chip == "MCP3202":
@@ -58,12 +55,12 @@ class MCP320xspi:
             print("ERROR - Chip is 2,4 or 8 channels, cannot use {}".format(self._channel_max))
 
 
-        self._dev = spidev.SpiDev(0,0)
+        self._dev = spidev.SpiDev(self._busnum,self._devnum)
         self._dev.mode =0
         self._dev.max_speed_hz=speed
         self._dev.bits_per_word = 8         # Despite what you may think, 12 does not work.
         self._control0=[0b00000110,0b00100000,0]  # Single ended/Differential needs to be implemented here.
-        
+
     def __del__(self):
         ''' Cleanup the spidev before being destroyed '''
         self._dev.close()
@@ -79,17 +76,17 @@ class MCP320xspi:
 
     def set_max_speed(self,speed):
         self._dev.max_speed_hz=speed
-    
+
     def ReadADC(self,channel):
         '''This method reads the ADC value, after connecting the analog multiplexer to the specified
         channel.
-        input:   channel  - selects the channel. 
+        input:   channel  - selects the channel.
         returns: ADC value is returned as a n-bit integer value, with n=10 or 12 depending on the chip.'''
 
         if channel < 0 or channel >= self._channel_max:
             print("Error - chip does not have channel = {}".format(channel))
             return(0)
-            
+
         control=[ self._control0[0] + ((channel&0b100)>>2) , self._control0[1]+((channel&0b011)<<6),0]
         dat = self._dev.xfer(control)
         value= (dat[1]<<8)+dat[2]
@@ -103,5 +100,3 @@ class MCP320xspi:
         dat = self._dev.xfer(self._control0)
         value= (dat[1]<<8)+dat[2]
         return(value)
-
-
