@@ -12,7 +12,7 @@ from spidev import SpiDev
 import time
 
 class MAX7219:
-    def __init__(self,DATA_pin,CS_bar_pin,CLK_pin,mode=1):
+    def __init__(self,DATA_pin,CLK_pin,CS_bar_pin,mode=1):
         '''This class helps with driving a MAX7219 LED module using either regular
         GPIO pins, or SPI hardware interface.
         For SPI hardware, set DATA_pin=0, CS_bar_pin=0 or 1, CLK_pin= bus speed (1000000)
@@ -225,8 +225,8 @@ def main(argv):
     the number 12345678, and then counting down.
     The code will use:
     Data pin   = 4
-    CS_bar pin = 5
-    CLK pin    = 6
+    CLK pin    = 5
+    CS_bar pin = 6
     '''
     M = MAX7219(4,5,6)
     num = 12345678

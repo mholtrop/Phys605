@@ -1,3 +1,7 @@
+# SPI version of the MCP320x driver.
+# NOTE: NOW OBSOLETE. USE THE MCP320x driver directly for SPI
+#
+# Author: Maurik Holtrop
 #
 # This module interfaces with the MCP300x or MCP320x family of chips, There
 # are 10-bit and 12-bit ADCs respectively.  The x number indicates the number
@@ -12,6 +16,7 @@
 # From MCP3208 datasheet:
 # Outging data : MCU latches data to A/D converter on rising edges of SCLK
 # Incoming data: Data is clocked out of A/D converter on falling edges, so should be read on rising edge.
+#
 
 import spidev
 import time

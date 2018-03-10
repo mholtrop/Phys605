@@ -10,7 +10,8 @@
 # SPI = serial peripheral interface: see https://en.wikipedia.org/wiki/Serial_Peripheral_Interface_Bus
 # Single ended, since we read data but do not send any.
 # "Bit-Bang" because we do not use the hardware interface, but instead use standard GPIO
-# ports which we toggle and read.
+# ports which we toggle and read. Note that you cannot use the hardware interface without adding
+# a tri-state buffer to your circuit.
 # For simplicity, and since we are not using multiple SPI devices in this example, we
 # do not have a "Chip-Select-bar" (SSbar) signal.
 #####################################################################
@@ -26,7 +27,7 @@ class SN74HC165:
         Input:
          * Serial_in  = GPIO pin for the input data bit, connect to the Q output of the chip.
          * Serial_CLK = GPIO pin for the clock, connect to CLK of the chip.
-         * Selial_Load= GPIO pin for the load signal, connect to LOAD of the chip.
+         * Selial_Load= GPIO pin for the load signal (CS_bar like behavior), connect to LOAD of the chip.
          * Serial_N   = number of bits to read, default=8
          '''
         GPIO.setmode(GPIO.BCM)  # Set the numbering scheme to correspond to numbers on Pi Wedge.
@@ -45,10 +46,7 @@ class SN74HC165:
 
     def __del__(self):          # This is automatically called when the class is deleted.
         '''Delete and cleanup.'''
-        GPIO.cleanup(self.Serial_In)
-        GPIO.cleanup(self.Serial_CLK)
-        GPIO.cleanup(self.Serial_Load)
-
+        GPIO.cleanup()
 
     def Load_Shifter(self):
         ''' Load the parallel data into the shifter by toggling Serial_Load low '''
