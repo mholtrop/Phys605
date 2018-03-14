@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 #
-# This is a test code is intended to readout an SN74HC165 chip.
+# This is a test code is intended to readout a set of 3 SN74HC165 chips
+# connected to two SN74HC4040 counters, for a 24-bit serial readout counter.
+# The counter input should be gated using a NAND gate to a GPIO pin.
+#
 # Author: Maurik Holtrop
 #
 # Basic operation:
@@ -22,9 +25,9 @@
 #       One input of the NAND gate goes to the Counter_Gate, the another
 #       to the clock to be counted.
 #
-# See also the ReadSerial.py code.
 #
 import RPi.GPIO as GPIO
+from DevLib import SN74HC165,MAX7219
 import time
 import sys
 
@@ -35,57 +38,59 @@ Counter_Gate = 16
 Serial_In  = 18   # GPIO pin for the SER pin of the shifter
 Serial_CLK = 19   # GPIO pin for the CLK pin of the shifter
 Serial_Load= 20   # GPIO pin for the SH/LD-bar pin of the shifter
-Serial_N   = 8   # Number of bits to shift in. 8 bits for every SN74HC165
+Serial_N   = 24   # Number of bits to shift in. 8 bits for every SN74HC165
+
+Max_data = 0        # Use 0 for SPI connection, otherwise use GPIO pin connected to driving
+Max_clock= 1000000  # Use clock frequency for SPI connection, otherwise use GPIO pin connected to CLK
+Max_cs_bar = 0      # Use channel (CE0 or CE1) for SPI connection, otherwise use GPIO pin for CS
+
+S = None  # Placeholder, make sure you run Setup() before using.
+M = None
+
 
 def Setup():
     '''Set the RPi to read the shifterers and communucate with the MAX7219 '''
+    global S
+    global M
+
     GPIO.setmode(GPIO.BCM)  # Set the numbering scheme to correspond to numbers on Pi Wedge.
 
-    GPIO.setup(Serial_CLK,GPIO.OUT)
-    GPIO.setup(Serial_In,GPIO.IN)
-    GPIO.setup(Serial_Load,GPIO.OUT)
-    GPIO.output(Serial_CLK,0)
-    GPIO.output(Serial_Load,1)
+    S = SN74HC165(Serial_In,Serial_CLK,Serial_Load,Serial_N) # Initialize serial shifter.
+    M = MAX7219(Max_data,Max_clock,Max_cs_bar)               # Initialize the display.
 
     GPIO.setup(Counter_Clear,GPIO.OUT)
     GPIO.setup(Counter_Gate,GPIO.OUT)
+    GPIO.output(Counter_Gate,0)
+    ClearCounter()
+
+def ClearCounter():
+    '''Clear the counter by pulsing the Counter_Clear pin high'''
     GPIO.output(Counter_Clear,1)
     GPIO.output(Counter_Clear,0)
-    GPIO.output(Counter_Gate,0)
-
 
 def Cleanup():
     GPIO.cleanup()
 
-def LoadAndShift(Nbits=Serial_N):
-    ''' Load a numner into the N shifters and then read it out by shifting.'''
-    GPIO.output(Serial_Load,0) # load data
-    GPIO.output(Serial_Load,1) # Ready to shift in.
-
-    out=0
-    for i in range(Serial_N):
-        bit = GPIO.input(Serial_In)    # First bit is already present on SER after load.
-        out <<= 1                      # Shift the out bits one to the left.
-        out += bit                     # Add the bit we just read.
-        GPIO.output(Serial_CLK, 1) # Clock High loads next bit
-        GPIO.output(Serial_CLK, 0)  # Clock Low resets cycle.
-    return(out)
+def LoadAndShift():
+    ''' Load a number into the shifters and then read it out.'''
+    S.Load_Shifter()
+    return(S.Read_Data())
 
 def Main():
     ''' Run a basic counter code. '''
     Setup()
     print "counting."
     sys.stdout.flush()
-    for i in range(100):
-        GPIO.output(Counter_Clear,1) # Clear the counter.
-        GPIO.output(Counter_Clear,0) # Counter ready to count.
+    while True:
+        ClearCounter()
         GPIO.output(Counter_Gate,1)  # Start the counter
         # x = 0                        # Do something we want to time.
         # for j in range(1000):
         #     x=x+j
-        time.sleep(1.)               # Sleep for 1 second while the counter counts.
+        time.sleep(0.9989611300233423)              # Sleep for not quite 1 second while the counter counts.
         GPIO.output(Counter_Gate,0) # Stop the counter.
-        count = LoadAndShift(24)
+        count = LoadAndShift()
+        M.WriteInt(count)
         print("{:04d}, {:6d}".format(i,count)) # Print the itteration and the counts.
         sys.stdout.flush()
         time.sleep(1.)              # Wait a sec before starting again.
