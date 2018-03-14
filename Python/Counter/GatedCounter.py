@@ -81,7 +81,9 @@ def Main():
     Setup()
     print "counting."
     sys.stdout.flush()
+    itt=0
     while True:
+        itt+=1
         ClearCounter()
         GPIO.output(Counter_Gate,1)  # Start the counter
         # x = 0                        # Do something we want to time.
