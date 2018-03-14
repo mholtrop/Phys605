@@ -93,7 +93,7 @@ def Main():
         GPIO.output(Counter_Gate,0) # Stop the counter.
         count = LoadAndShift()
         M.WriteInt(count)
-        print("{:04d}, {:6d}".format(i,count)) # Print the itteration and the counts.
+        print("{:04d}, {:6d}".format(itt,count)) # Print the itteration and the counts.
         sys.stdout.flush()
         time.sleep(1.)              # Wait a sec before starting again.
 
