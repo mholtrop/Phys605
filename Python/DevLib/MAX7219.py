@@ -32,9 +32,7 @@ class MAX7219:
         self._dev = None
 
         if self.DATA>0:
-            if GPIO.getmode() != 11:
-                GPIO.setmode(GPIO.BCM)
-
+            GPIO.setmode(GPIO.BCM)
             GPIO.setup(self.CLK,GPIO.OUT)
             GPIO.setup(self.DATA,GPIO.OUT)
             GPIO.setup(self.CS_bar,GPIO.OUT)

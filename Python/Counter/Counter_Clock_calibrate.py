@@ -44,9 +44,14 @@ Serial_CLK = 19   # GPIO pin for the CLK pin of the shifter
 Serial_Load= 20   # GPIO pin for the SH/LD-bar pin of the shifter
 Serial_N   = 32   # Number of bits to shift in. 8 bits for every SN74HC165
 
-Max_data = 0        # Use 0 for SPI connection, otherwise use GPIO pin connected to driving
-Max_clock= 1000000  # Use clock frequency for SPI connection, otherwise use GPIO pin connected to CLK
-Max_cs_bar = 0      # Use channel (CE0 or CE1) for SPI connection, otherwise use GPIO pin for CS
+Max_data   = 4
+Max_clock  = 5
+Max_cs_bar = 6
+
+# If you connect your display to the PSI interface, comment the lines above and uncomment the lines below.
+# Max_data = 0        # Use 0 for SPI connection, otherwise use GPIO pin connected to driving
+# Max_clock= 1000000  # Use clock frequency for SPI connection, otherwise use GPIO pin connected to CLK
+# Max_cs_bar = 0      # Use channel (CE0 or CE1) for SPI connection, otherwise use GPIO pin for CS
 
 S = None  # Placeholder, make sure you run Setup() before using.
 M = None
@@ -74,7 +79,8 @@ def ClearCounter():
     GPIO.output(Counter_Clear,0)
 
 def Cleanup():
-    GPIO.cleanup()
+    GPIO.cleanup(Counter_Clear)
+    GPIO.cleanup(Counter_Gate)
 
 def LoadAndShift():
     ''' Load a number into the shifters and then read it out.'''
@@ -103,7 +109,7 @@ def Main():
     last_count=0
     last_now=time_start
     try:
-        while time_now < time_start+3600*12:  # Run for 12 hours
+        while time_now < time_start+3600*1:  # Run for 1 hour
             itt+=1
             time.sleep(0.9976)              # Sleep for not quite 1 second while the counter counts.
             count = LoadAndShift()
@@ -115,22 +121,23 @@ def Main():
             dt=now-time_start
             freq=count/dt
             freq_now=diff_count/diff_time
-            freq_now_sum += freq_now
-            freq_now_ssq += freq_now*freq_now
-            freq_now_ave = freq_now_sum/itt
-            freq_now_sigma= math.sqrt(freq_now_ssq/itt - freq_now_ave*freq_now_ave)
-            M.WriteFloat(freq)
-            print("{:14d} ({:9d}), {:12.4f} ({:4.3f}), {:16.8f}, {:16.8f}, {:16.8f}+/-{:12.8f} ".format(count,diff_count,dt,diff_time,freq,freq_now,freq_now_ave,freq_now_sigma)) # Print the itteration and the counts.
-            sys.stdout.flush()
-            wr.writerow([itt,count,dt,freq,freq_now,freq_now_ave,freq_now_sigma])
+            if itt != 1:                  # The first call often has extra count(s), so skip in the averaging.
+                freq_now_sum += freq_now
+                freq_now_ssq += freq_now*freq_now
+                freq_now_ave = freq_now_sum/itt
+                freq_now_sigma= math.sqrt(freq_now_ssq/itt - freq_now_ave*freq_now_ave)
+                M.WriteFloat(freq)
+                print("{:14d} ({:9d}), {:12.4f} ({:4.3f}), {:16.8f}, {:16.8f}, {:16.8f}+/-{:12.8f} ".format(count,diff_count,dt,diff_time,freq,freq_now,freq_now_ave,freq_now_sigma)) # Print the itteration and the counts.
+                sys.stdout.flush()
+                wr.writerow([itt,count,dt,freq,freq_now,freq_now_ave,freq_now_sigma])
     except KeyboardInterrupt:
         print("Interrupted.")
     except Exception as e:
         print("Error")
         print(e)
-    fout.close()
-    Cleanup()
-
+    finally:
+        fout.close()
+        Cleanup()
 
 if __name__ == "__main__":
     Main()
