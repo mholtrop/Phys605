@@ -46,7 +46,9 @@ class SN74HC165:
 
     def __del__(self):          # This is automatically called when the class is deleted.
         '''Delete and cleanup.'''
-        GPIO.cleanup()
+        GPIO.cleanup(self.Serial_In)
+        GPIO.cleanup(self.Serial_CLK)
+        GPIO.cleanup(self.Serial_Load)
 
     def Load_Shifter(self):
         ''' Load the parallel data into the shifter by toggling Serial_Load low '''
