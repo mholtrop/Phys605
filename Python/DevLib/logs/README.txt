@@ -1,0 +1,1 @@
+Folder containing all the log files for the components used

@@ -19,10 +19,30 @@
 import RPi.GPIO as GPIO  # Setup the GPIO for RPi
 import time
 import sys
+import logging
 
 class SN74HC165:
 
     def __init__(self,Serial_In,Serial_CLK,Serial_Load,Serial_N=8):
+
+        # Initialize logger output file to the current directory at the DEBUG level
+        logger = logging.getLogger()
+        logger.setLevel(logging.DEBUG)
+
+        # Create the file handler for this logger, sets its level to DEBUG
+        file_handler = logging.FileHandler('./logs/sn74hc165_{}.log'.format(time.strftime("%d%m%y_%H%M")), delay=False)
+        file_handler.setLevel(logging.DEBUG)
+        formatter = logging.Formatter("sn74hc165: %(levelname)s - %(message)s")
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
+
+        # Add the stream handler so the logger will also output to the console, set
+        # the level to debug
+        stream_handler = logging.StreamHandler()
+        formatter = logging.Formatter("sn74hc165: %(levelname)s - %(message)s")
+        stream_handler.setFormatter(formatter)
+        logger.addHandler(stream_handler)
+        self.log = logger
         '''Initialize the module.
         Input:
          * Serial_in  = GPIO pin for the input data bit, connect to the Q output of the chip.
