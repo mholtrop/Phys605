@@ -19,7 +19,6 @@
 #
 
 import spidev
-import time
 
 class MCP320xspi:
 
@@ -32,26 +31,32 @@ class MCP320xspi:
         self._devnum = device
         self._single_ended=single_ended
 
-        if chip == "MCP3202":
-            self._channel_max = 2
-            self._bit_length  =12
-        elif chip == "MCP3204":
-            self._channel_max = 4
-            self._bit_length  =12
-        elif chip == "MCP3208":
-            self._channel_max = 8
-            self._bit_length  =12
-        elif chip == "MCP3002":
-            self._channel_max = 2
-            self._bit_length  =10
-        elif chip == "MCP3004":
-            self._channel_max = 4
-            self._bit_length  =10
-        elif chip == "MCP3008":
-            self._channel_max = 8
-            self._bit_length  =10
+        dDict = {
+                "MCP3202":
+                    {'Channel_Max': 2,
+                     'Bit_length' : 12},
+                "MCP3204":
+                    {'Channel_Max': 4,
+                     'Bit_length' : 12},
+                "MCP3208":
+                    {'Channel_Max': 8,
+                     'Bit_length' : 12},
+                "MCP3002":
+                    {'Channel_Max': 2,
+                     'Bit_length' : 10},
+                "MCP3004":
+                    {'Channel_Max': 4,
+                     'Bit_length' : 10},
+                "MCP3008":
+                    {'Channel_Max': 8,
+                     'Bit_length' : 10}
+                }
+
+        if chip in dDict:
+            self._channel_max = dDict[chip['Channel_Max']]
+            self._bit_length = dDict[chip['Bit_length']]
         else:
-            print "Unknown chip: {} - Please re-initialize."
+            print "Unknown chip: {} - Please re-initialize.".format(chip)
             self._channel_max = 0
             self._bit_length  = 0
             return

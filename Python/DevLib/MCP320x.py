@@ -56,29 +56,35 @@ class MCP320x:
         self.MISO = MISO_pin
         self.CS_bar = CS_bar_pin
 
-        if chip == "MCP3202":
-            self.Channel_max = 2
-            self.Bit_length  =12
-        elif chip == "MCP3204":
-            self.Channel_max = 4
-            self.Bit_length  =12
-        elif chip == "MCP3208":
-            self.Channel_max = 8
-            self.Bit_length  =12
-        elif chip == "MCP3002":
-            self.Channel_max = 2
-            self.Bit_length  =10
-        elif chip == "MCP3004":
-            self.Channel_max = 4
-            self.Bit_length  =10
-        elif chip == "MCP3008":
-            self.Channel_max = 8
-            self.Bit_length  =10
+        dDict = {
+                "MCP3202":
+                    {'Channel_Max': 2,
+                     'Bit_length' : 12},
+                "MCP3204":
+                    {'Channel_Max': 4,
+                     'Bit_length' : 12},
+                "MCP3208":
+                    {'Channel_Max': 8,
+                     'Bit_length' : 12},
+                "MCP3002":
+                    {'Channel_Max': 2,
+                     'Bit_length' : 10},
+                "MCP3004":
+                    {'Channel_Max': 4,
+                     'Bit_length' : 10},
+                "MCP3008":
+                    {'Channel_Max': 8,
+                     'Bit_length' : 10}
+                }
+
+        if chip in dDict:
+            self.Channel_max = dDict[chip['Channel_Max']]
+            self.Bit_length = dDict[chip['Bit_length']]
         elif chip == None and (channel_max != None) and (bit_length!=None):
             self.Channel_max = channel_max
             self.Bit_length  = bit_length
         else:
-            print "Unknown chip: {} - Please re-initialize."
+            print "Unknown chip: {} - Please re-initialize.".format(chip)
             self.Channel_max = 0
             self.Bit_length  = 0
             return
