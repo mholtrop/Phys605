@@ -18,24 +18,33 @@
 #####################################################################
 
 # import RPi.GPIO as GPIO  # Setup the GPIO for RPi
+#import cProfile, pstats, io
+#pr = cProfile.Profile()
+#pr.enable()
 import time
 import sys
+import re
+
 
 class SN74HC165:
 
-    def __init__(self,Serial_In,Serial_CLK,Serial_Load,Serial_N=8):
+    def __init__(self,Serial_In=18,Serial_CLK=19,Serial_Load=20,Serial_N=8):
         '''Initialize the module.
         Input:
-         * Serial_in  = GPIO pin for the input data bit, connect to the Q output of the chip.
-         * Serial_CLK = GPIO pin for the clock, connect to CLK of the chip.
-         * Selial_Load= GPIO pin for the load signal, connect to LOAD of the chip.
-         * Serial_N   = number of bits to read, default=8
-         '''
-#        GPIO.setmode(GPIO.BCM)  # Set the numbering scheme to correspond to numbers on Pi Wedge.
-        self.Serial_In  = Serial_In  # = MISO - GPIO pin for the Q (serial out) pin of the shifter
-        self.Serial_CLK = Serial_CLK # = CLK  - GPIO pin for the CLK (clock) pin of the shifter
-        self.Serial_Load= Serial_Load# = Load - GPIO pin the SH/LD-bar pin of the shifter.
-        self.Serial_N   = Serial_N   # Number of bits to shift in. 8 bits for every SN74HC165.
+        * Serial_in  = GPIO pin for the input data bit, connect to the Q output of the chip.
+        * Serial_CLK = GPIO pin for the clock, connect to CLK of the chip.
+        * Selial_Load= GPIO pin for the load signal, connect to LOAD of the chip.
+        * Serial_N   = number of bits to read, default=8
+        '''
+        # GPIO.setmode(GPIO.BCM)  # Set the numbering scheme to correspond to numbers on Pi Wedge.
+        self.Serial_In= Serial_In
+        self.Serial_CLK= Serial_CLK
+        self.Serial_Load= Serial_Load
+        self.Serial_N = Serial_N
+        # = MISO - GPIO pin for the Q (serial out) pin of the shifter
+        # = CLK  - GPIO pin for the CLK (clock) pin of the shifter
+        # = Load - GPIO pin the SH/LD-bar pin of the shifter.
+        # Number of bits to shift in. 8 bits for every SN74HC165.
         print("Initialized the RPi for a shifter connected to:")
         print("SN74HC165 Q     to RPi pin {}".format(self.Serial_In))
         print("SN74HC165 CLK   to RPi pin {}".format(self.Serial_CLK))
@@ -44,7 +53,7 @@ class SN74HC165:
 
         # Demo DATA
         tmpdat=[0xDE,0xAD,0xBE,0xEF,0x12,0x34,0x56,0x78]
-        self.demo_numbers= [ "{:08b}".format(x) for x in tmpdat]  # Turn data into bit strings.
+        self.demo_numbers= ["{:08b}".format(x) for x in tmpdat]  # Turn data into bit strings.
         self.nidx=0
         self.data=0
         #
@@ -67,7 +76,7 @@ class SN74HC165:
     def Load_Shifter(self):
         ''' Load the parallel data into the shifter by toggling Serial_Load low '''
         print("Load Shifter.")
-        self.data = [ int(self.demo_numbers[self.nidx][i]) for i in range(8)] # Load the demo bits as bits.
+        self.data = [int(self.demo_numbers[self.nidx][i]) for i in range(8)] # Load the demo bits as bits.
         self.nidx += 1
         if self.nidx >= len(self.demo_numbers):
             self.nidx = 0
@@ -86,14 +95,14 @@ class SN74HC165:
         # data, and the bit on the G input pin is shifted to SER, etc.
         out=0
         for i in range(self.Serial_N):        # Run the loop shift_n times.
-#            bit = GPIO.input(self.Serial_In  # First bit is already present on Q after load.
+            # bit = GPIO.input(self.Serial_In  # First bit is already present on Q after load.
             bit = self.data[i]
             out <<= 1                         # Shift the bits in "out" one position to the left.
             out += bit                        # Add the bit we just read in the LSB location of out.
 #            GPIO.output(self.Serial_CLK, GPIO.HIGH) # Clock High loads next bit into Q of chip.
 #            GPIO.output(self.Serial_CLK, GPIO.LOW)  # Clock back to low, rest state.
 
-        return(out)                        # Return the data.
+        return(out)                       # Return the data.
 #
 # The code below turns this module into a program as well
 # allowing you to run it in test mode from the command line.
@@ -107,10 +116,17 @@ def main(argv):
     Serial_Load= 20
     '''
 
-    S = SN74HC165(18,19,20,8)
+    S = SN74HC165() # Turned the defaults above into parameters that default to 18, 19, and 20.
     S.Load_Shifter()
     num = S.Read_Data()
-    print("{:3d} 0x{:2x} 0b{:8b}".format(num,num,num))
+    print(num)
+
 
 if __name__ == '__main__':
     main(sys.argv)
+#pr.disable()
+#s = io.StringIO()
+#sortby = 'cumulative'
+#ps = pstats.Stats(pr,stream=s).sort_stats(sortby) # Optimization stuff
+#ps.print_stats()
+#print(s.getvalue())
