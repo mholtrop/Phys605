@@ -78,7 +78,7 @@ class MCP320x:
             self.Channel_max = channel_max
             self.Bit_length  = bit_length
         else:
-            print "Unknown chip: {} - Please re-initialize."
+            print("Unknown chip: {} - Please re-initialize.")
             self.Channel_max = 0
             self.Bit_length  = 0
             return
