@@ -42,11 +42,32 @@
 
 import RPi.GPIO as GPIO
 import spidev
+import logging
+import time
 
 class MCP320x:
 
     def __init__(self,CS_bar_pin,CLK_pin=1000000,MOSI_pin=0,MISO_pin=0,chip='MCP3208',
                  channel_max=None,bit_length=None,single_ended=1):
+        
+        # Initialize logger output file to the current directory at the DEBUG level
+        logger = logging.getLogger()
+        logger.setLevel(logging.DEBUG)
+
+        # Create the file handler for this logger, sets its level to DEBUG
+        file_handler = logging.FileHandler('./logs/mcp320x_{}.log'.format(time.strftime("%d%m%y_%H%M")), delay=False)
+        file_handler.setLevel(logging.DEBUG)
+        formatter = logging.Formatter("%(levelname)s - %(message)s")
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
+
+        # Add the stream handler so the logger will also output to the console, set
+        # the level to debug
+        stream_handler = logging.StreamHandler()
+        formatter = logging.Formatter("mcp320x: %(levelname)s - %(message)s")
+        stream_handler.setFormatter(formatter)
+        logger.addHandler(stream_handler)
+        self.log = logger
         '''Initialize the code and set the GPIO pins.
         The last argument, ch_max, is 2 for the MCP3202, 4 for the
         MCP3204 or 8 for the MCS3208'''
@@ -56,35 +77,32 @@ class MCP320x:
         self.MISO = MISO_pin
         self.CS_bar = CS_bar_pin
 
-        if chip == "MCP3202":
-            self.Channel_max = 2
-            self.Bit_length  =12
-        elif chip == "MCP3204":
-            self.Channel_max = 4
-            self.Bit_length  =12
-        elif chip == "MCP3208":
-            self.Channel_max = 8
-            self.Bit_length  =12
-        elif chip == "MCP3002":
-            self.Channel_max = 2
-            self.Bit_length  =10
-        elif chip == "MCP3004":
-            self.Channel_max = 4
-            self.Bit_length  =10
-        elif chip == "MCP3008":
-            self.Channel_max = 8
-            self.Bit_length  =10
-        elif chip == None and (channel_max != None) and (bit_length!=None):
+
+        # Defines a dictionary containing the channnel max 
+        # and bit length values for each chip (shortens very long if statement)
+
+        chip_dictionary = {"MCP3202": [2, 12], 
+                            "MCP3204": [4, 12],
+                            "MCP3208": [8, 12],
+                            "MCP3002": [2, 10],
+                            "MCP3004": [4, 10],
+                            "MCP3008": [8, 10]}
+
+        current_chip = chip_dictionary.get(chip)
+        if current_chip is not None:
+            self.channel_max = current_chip[0]
+            self.Bit_length = current_chip[1]
+        elif current_chip is None and (channel_max is not None) and (bit_length is not None):
             self.Channel_max = channel_max
             self.Bit_length  = bit_length
         else:
-            print "Unknown chip: {} - Please re-initialize."
+            self.log.error("Unknown chip: {} - Please re-initialize.")
             self.Channel_max = 0
             self.Bit_length  = 0
             return
 
         if not self.Channel_max in [2,4,8]:
-            print("ERROR - Chip is 2,4 or 8 channels, cannot use {}".format(self.Channel_max))
+            self.log.warning("ERROR - Chip is 2,4 or 8 channels, cannot use {}".format(self.Channel_max))
 
         self.Single_ended_mode = single_ended;
 
@@ -162,7 +180,7 @@ class MCP320x:
         The value can be converted to a voltage with:
            volts = data*Vref/(2**n-1)'''
         if channel < 0 or channel >= self.Channel_max:
-            print("Error - chip does not have channel = {}".format(channel))
+            self.log.warning("Error - chip does not have channel = {}".format(channel))
 
 
         if self.MOSI == 0:
@@ -232,7 +250,7 @@ def main(argv):
         miso_pin=0
         channel =0
     elif len(argv) < 6:
-        print("Please supply: cs_bar_pin clk_pin mosi_pin miso_pin channel")
+        self.log.info("Please supply: cs_bar_pin clk_pin mosi_pin miso_pin channel")
         sys.exit(1)
 
     else:

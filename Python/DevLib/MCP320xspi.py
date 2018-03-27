@@ -28,36 +28,52 @@ class MCP320xspi:
         The last argument, ch_max, is 2 for the MCP3202, 4 for the
         MCP3204 or 8 for the MCS3208'''
 
+        # Set the logger for this file and intialize the level to DEBUG
+        logger = logging.getLogger()
+        logger.setLevel(logging.DEBUG)
+
+        # Create the file handler for this logger, sets its level to DEBUG
+        file_handler = logging.FileHandler('./logs/mcp320x_{}.log'.format(time.strftime("%d%m%y_%H%M")), delay=False)
+        file_handler.setLevel(logging.DEBUG)
+        formatter = logging.Formatter("%(levelname)s - %(message)s")
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
+
+        # Add the stream handler so the logger will also output to the console, set
+        # the level to debug
+        stream_handler = logging.StreamHandler()
+        formatter = logging.Formatter("mcp320xspi: %(levelname)s - %(message)s")
+        stream_handler.setFormatter(formatter)
+        logger.addHandler(stream_handler)
+        self.log = logger
+
         self._busnum = bus
         self._devnum = device
         self._single_ended=single_ended
 
-        if chip == "MCP3202":
-            self._channel_max = 2
-            self._bit_length  =12
-        elif chip == "MCP3204":
-            self._channel_max = 4
-            self._bit_length  =12
-        elif chip == "MCP3208":
-            self._channel_max = 8
-            self._bit_length  =12
-        elif chip == "MCP3002":
-            self._channel_max = 2
-            self._bit_length  =10
-        elif chip == "MCP3004":
-            self._channel_max = 4
-            self._bit_length  =10
-        elif chip == "MCP3008":
-            self._channel_max = 8
-            self._bit_length  =10
+        # Defines a dictionary containing the channnel max 
+        # and bit length values for each chip (shortens very long if statement)
+        
+        chip_dictionary = {"MCP3202": [2, 12], 
+                            "MCP3204": [4, 12],
+                            "MCP3208": [8, 12],
+                            "MCP3002": [2, 10],
+                            "MCP3004": [4, 10],
+                            "MCP3008": [8, 10]}
+
+        current_chip = chip_dictionary.get(chip)
+
+        if current_chip is not None:
+            self._channel_max = current_chip[0]
+            self._bit_length = current_chip[1]
         else:
-            print "Unknown chip: {} - Please re-initialize."
+            self.log.warning("Unknown chip: {} - Please re-initialize.")
             self._channel_max = 0
             self._bit_length  = 0
             return
 
         if not self._channel_max in [2,4,8]:
-            print("ERROR - Chip is 2,4 or 8 channels, cannot use {}".format(self._channel_max))
+            self.log.error("ERROR - Chip is 2,4 or 8 channels, cannot use {}".format(self._channel_max))
 
 
         self._dev = spidev.SpiDev(self._busnum,self._devnum)
@@ -89,7 +105,7 @@ class MCP320xspi:
         returns: ADC value is returned as a n-bit integer value, with n=10 or 12 depending on the chip.'''
 
         if channel < 0 or channel >= self._channel_max:
-            print("Error - chip does not have channel = {}".format(channel))
+            self.log.error("Error - chip does not have channel = {}".format(channel))
             return(0)
 
         control=[ self._control0[0] + ((channel&0b100)>>2) , self._control0[1]+((channel&0b011)<<6),0]
