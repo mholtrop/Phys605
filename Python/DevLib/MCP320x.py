@@ -123,10 +123,23 @@ class MCP320x:
 
     def __del__(self):
         ''' Cleanup the GPIO before being destroyed '''
-        GPIO.cleanup(self.CS_bar)
-        GPIO.cleanup(self.CLK)
-        GPIO.cleanup(self.MOSI)
-        GPIO.cleanup(self.MISO)
+        if(self.MOSI>0):
+            GPIO.cleanup(self.CS_bar)
+            GPIO.cleanup(self.CLK)
+            GPIO.cleanup(self.MOSI)
+            GPIO.cleanup(self.MISO)
+
+    def get_channel_max(self):
+        '''Return the maximum number of channels'''
+        return(self.channel_max)
+
+    def get_bit_length(self):
+        '''Return the number of bits that will be read'''
+        return(self.Bit_length)
+
+    def get_value_max(self):
+        '''Return the maximum value possible for an ADC read'''
+        return(2**self.Bit_length-1)
 
     def SendBit(self,bit):
         ''' Send out a single bit, and pulse clock.'''
