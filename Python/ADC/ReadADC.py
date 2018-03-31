@@ -5,7 +5,7 @@
 # Example ADC reading program 4, using MC320xspi module.
 #
 from DevLib import MCP320x  # From the DevLib, load the MCP320x module.
-
+import time
 
 def Main():
     ''' Example ADC read main function. This will read values from the ADC and print them in a loop.'''
@@ -22,8 +22,10 @@ def Main():
                 val = adc.ReadADC(ch)   # Read the data from the analog input number 0.
                 # Print the value in decimal, hexadecimal, and binary format.
                 # Binary format: {:0b} prints the value in 1 and 0,
-                print "Ch: {:2d} Value: {:4d} (0x{:04X} = 0b{:012b})".format(ch,val,val,val)
-                time.sleep(0.5)
+                print("Ch: {:2d} Value: {:4d} (0x{:04X} = 0b{:012b})".format(ch,val,val,val))
+            print("")
+            time.sleep(0.5)
+
     except KeyboardInterrupt:
         sys.exit(0)
 
