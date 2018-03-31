@@ -56,25 +56,19 @@ class MCP320x:
         self.MISO = MISO_pin
         self.CS_bar = CS_bar_pin
 
-        if chip == "MCP3202":
-            self.Channel_max = 2
-            self.Bit_length  =12
-        elif chip == "MCP3204":
-            self.Channel_max = 4
-            self.Bit_length  =12
-        elif chip == "MCP3208":
-            self.Channel_max = 8
-            self.Bit_length  =12
-        elif chip == "MCP3002":
-            self.Channel_max = 2
-            self.Bit_length  =10
-        elif chip == "MCP3004":
-            self.Channel_max = 4
-            self.Bit_length  =10
-        elif chip == "MCP3008":
-            self.Channel_max = 8
-            self.Bit_length  =10
-        elif chip == None and (channel_max != None) and (bit_length!=None):
+        chip_dictionary={
+                "MCP3202":(2,12),
+                "MCP3204":(4,12),
+                "MCP3208":(8,12),
+                "MCP3002":(2,10),
+                "MCP3004":(4,10),
+                "MCP3008":(8,10)
+        }
+
+        if chip in chip_dictionary:
+            self.Channel_max = chip_dictionary[chip][0]
+            self.Bit_length  = chip_dictionary[chip][1]
+        elif chip == None and (channel_max is not None) and (bit_length is not None):
             self.Channel_max = channel_max
             self.Bit_length  = bit_length
         else:
@@ -82,9 +76,6 @@ class MCP320x:
             self.Channel_max = 0
             self.Bit_length  = 0
             return
-
-        if not self.Channel_max in [2,4,8]:
-            print("ERROR - Chip is 2,4 or 8 channels, cannot use {}".format(self.Channel_max))
 
         self.Single_ended_mode = single_ended;
 
@@ -131,7 +122,7 @@ class MCP320x:
 
     def get_channel_max(self):
         '''Return the maximum number of channels'''
-        return(self.channel_max)
+        return(self.Channel_max)
 
     def get_bit_length(self):
         '''Return the number of bits that will be read'''
