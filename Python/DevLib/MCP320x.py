@@ -28,7 +28,7 @@
 #   raspi-config program first. The data rate can be up to 1MHz.
 #   Connections: RPi pins to MCP320x
 #              CE0 or CE1 = CS/SHDN  (chip select) set CS_bar = 0 or 1
-#              CSK        = CLK      set CLK_pin  = 1000000 (transfer speed)
+#              SCK        = CLK      set CLK_pin  = 1000000 (transfer speed)
 #              MOSI       = D_in     set MOSI_pin = 0
 #              MISO       = D_out    set MISO_pin = 0
 
