@@ -121,7 +121,7 @@ class MAX7219:
 
     def WriteLocChar(self,loc,dat):
         '''Write dat to loc. If the mode is 1 then dat is a number and loc is the location.
-        If mode is 2 then dat is an 8 bit LED position.
+        If mode is 0 then dat is an 8 bit LED position.
         This is used internally to display the numbers/characters.'''
         if self.DATA>0:
             out = (loc <<8)
@@ -139,7 +139,7 @@ class MAX7219:
             print("please provide an tuple or list")
 
         for i in range(len(n)):
-            self.WriteLocChar(l,n[i])
+            self.WriteLocChar(i,n[i])
 
 
     def WriteInt(self,n):
