@@ -139,7 +139,7 @@ class MAX7219:
             print("please provide an tuple or list")
 
         for i in range(len(n)):
-            self.WriteLocChar(i,n[i])
+            self.WriteLocChar(i+1,n[i])
 
 
     def WriteInt(self,n):
