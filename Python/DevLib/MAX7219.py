@@ -131,12 +131,23 @@ class MAX7219:
         else:
             self._dev.writebytes([loc,dat])
 
+    def WriteRaw(self,n):
+        '''Write the list of 8-bit integers to the module in raw mode'''
+        if self.mode != 0:
+            raise ValueError()
+        if type(n) is int:
+            print("please provide an tuple or list")
+
+        for i in range(len(n)):
+            self.WriteLocChar(l,n[i])
+
+            
     def WriteInt(self,n):
         ''' Write the integer n on the display, shifted left. If n is larger (smaller) than
         fits, an overflow is indicated by all dash.'''
 
         if self.Mode != 1:
-            raise ValueError();
+            raise ValueError()
 
         if n > 99999999 or n< -9999999: # Display overflow, --------
             for i in range(8):
