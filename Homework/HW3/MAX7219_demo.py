@@ -40,7 +40,7 @@ class MAX7219:
             # GPIO.output(self.CLK,0)
             # GPIO.output(self.DATA,0)
             # GPIO.output(self.CS_bar,1)
-            print("Bitbank mode: Clk={}, Data={}, CS_bar={}",self.CLK,self.DATA,self.CS_bar)
+            print("Bitbank mode: Clk={}, Data={}, CS_bar={}".format(self.CLK,self.DATA,self.CS_bar))
         else:
             if self.CLK < 100:
                 self.CLK=1000000
@@ -232,42 +232,3 @@ class MAX7219:
         '''Write something comforting to the user :-) '''
         if self.DATA>0:
             print("MAX7219 driver interface. GPIO mode: DATA={} CS_bar={} CLK={}",self.DATA,self.CS_bar,self.CLK)
-
-#
-# The code below turns this module into a program as well
-# allowing you to run it in test mode from the command line.
-#
-def main(argv):
-    '''Test the functioning of the module displaying
-    the number 12345678, and then counting down.
-    The code will use:
-    Data pin   = 4
-    CLK pin    = 5
-    CS_bar pin = 6
-    '''
-#    Max_data   = 4
-#    Max_clock  = 5
-#    Max_cs_bar = 6
-
-# If you connect your display to the PSI interface, comment the lines above and uncomment the lines below.
-    Max_data = 0        # Use 0 for SPI connection, otherwise use GPIO pin connected to driving
-    Max_clock= 1000000  # Use clock frequency for SPI connection, otherwise use GPIO pin connected to CLK
-    Max_cs_bar = 0      # Use channel (CE0 or CE1) for SPI connection, otherwise use GPIO pin for CS
-
-    M = MAX7219(Max_data,Max_clock,Max_cs_bar)
-    num = 12345678
-    M.WriteInt(num)
-    time.sleep(1)
-    try:
-        for i in range(num,0,-1):
-            M.WriteInt(i)
-            time.sleep(0.01)
-    except KeyboardInterrupt:
-        print(" Interrupted")
-    except Exception as e:
-        print("Error")
-        print(e)
-
-if __name__ == '__main__':
-    import sys
-    main(sys.argv)
