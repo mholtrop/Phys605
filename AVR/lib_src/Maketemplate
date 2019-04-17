@@ -8,7 +8,7 @@
 #
 ################################################
 
-AVR_HOME ?= ${HOME}/code/AVR
+AVR_HOME ?= ${HOME}/Phys605/AVR
 
 include $(AVR_HOME)/Makefile_specs.mk
 
