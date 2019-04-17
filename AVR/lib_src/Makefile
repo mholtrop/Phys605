@@ -6,7 +6,7 @@
 #
 #############################################
 
-AVR_HOME ?= ${HOME}/code/AVR
+AVR_HOME ?= ${HOME}/Phys605/AVR
 
 UTILS= Adafruit_NeoPixel EEPROM Firmata LiquidCrystal SPI Sensirion  SoftwareSerial Wire
 # RF24
