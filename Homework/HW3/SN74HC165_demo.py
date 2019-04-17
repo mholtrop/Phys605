@@ -29,7 +29,7 @@ class SN74HC165:
          * Serial_in  = GPIO pin for the input data bit, connect to the Q output of the chip.
          * Serial_CLK = GPIO pin for the clock, connect to CLK of the chip.
          * Selial_Load= GPIO pin for the load signal, connect to LOAD of the chip.
-         * Serial_N   = number of bits to read, default=8
+         * Serial_N   = number of bits to clock out after a Load, default=8 (one chip)
          '''
 #        GPIO.setmode(GPIO.BCM)  # Set the numbering scheme to correspond to numbers on Pi Wedge.
         self.Serial_In  = Serial_In  # = MISO - GPIO pin for the Q (serial out) pin of the shifter
@@ -43,8 +43,8 @@ class SN74HC165:
         print("Shifting {} bits.".format(self.Serial_N))
 
         # Demo DATA
-        tmpdat=[0xDE,0xAD,0xBE,0xEF,0x12,0x34,0x56,0x78]
-        self.demo_numbers= [ "{:08b}".format(x) for x in tmpdat]  # Turn data into bit strings.
+        tmpdat=[0xDE,0xAD,0xBE,0xEF,0x12,0x34,0x56,0x78,0x45,0xAA,0x55,0x01,0xFF,0x00,0x14,0x15,0x00,0x00]
+        self.demo_numbers= ''.join([ "{:08b}".format(x) for x in tmpdat])  # Turn data into bit strings.
         self.nidx=0
         self.data=0
         #
@@ -67,8 +67,8 @@ class SN74HC165:
     def Load_Shifter(self):
         ''' Load the parallel data into the shifter by toggling Serial_Load low '''
         print("Load Shifter.")
-        self.data = [ int(self.demo_numbers[self.nidx][i]) for i in range(8)] # Load the demo bits as bits.
-        self.nidx += 1
+        self.data = [ int(self.demo_numbers[self.nidx+i]) for i in range(self.Serial_N)] # Load the demo bits as bits.
+        self.nidx += self.Serial_N
         if self.nidx >= len(self.demo_numbers):
             self.nidx = 0
 #        GPIO.output(self.Serial_Load,GPIO.LOW)
@@ -94,23 +94,3 @@ class SN74HC165:
 #            GPIO.output(self.Serial_CLK, GPIO.LOW)  # Clock back to low, rest state.
 
         return(out)                        # Return the data.
-#
-# The code below turns this module into a program as well
-# allowing you to run it in test mode from the command line.
-#
-def main(argv):
-    '''Test the functioning of the module by reading N
-    numbers from serial.
-    The code will use:
-    Serial_In  = 18
-    Serial_CLK = 19
-    Serial_Load= 20
-    '''
-
-    S = SN74HC165(18,19,20,8)
-    S.Load_Shifter()
-    num = S.Read_Data()
-    print("{:3d} 0x{:2x} 0b{:8b}".format(num,num,num))
-
-if __name__ == '__main__':
-    main(sys.argv)

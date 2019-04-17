@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 #
-# This module will steer a MAX7219 chip.
+# This is a DEMO module for the MAX7219 chip.
 #
 # The MAX7219 is an LED driver that can steer 8x 7-segment numerical display, or
 # an 8x8 Matrix of LEDs.
 #
 # Author: Maurik Holtrop
 #
-import RPi.GPIO as GPIO
-from spidev import SpiDev
+#import RPi.GPIO as GPIO
+#from spidev import SpiDev
 import time
 
 class MAX7219:
@@ -32,21 +32,23 @@ class MAX7219:
         self._dev = None
 
         if self.DATA>0:
-            GPIO.setmode(GPIO.BCM)
-            GPIO.setup(self.CLK,GPIO.OUT)
-            GPIO.setup(self.DATA,GPIO.OUT)
-            GPIO.setup(self.CS_bar,GPIO.OUT)
-
-            GPIO.output(self.CLK,0)
-            GPIO.output(self.DATA,0)
-            GPIO.output(self.CS_bar,1)
+            # GPIO.setmode(GPIO.BCM)
+            # GPIO.setup(self.CLK,GPIO.OUT)
+            # GPIO.setup(self.DATA,GPIO.OUT)
+            # GPIO.setup(self.CS_bar,GPIO.OUT)
+            #
+            # GPIO.output(self.CLK,0)
+            # GPIO.output(self.DATA,0)
+            # GPIO.output(self.CS_bar,1)
+            print("Bitbank mode: Clk={}, Data={}, CS_bar={}".format(self.CLK,self.DATA,self.CS_bar))
         else:
             if self.CLK < 100:
                 self.CLK=1000000
-            self._dev = SpiDev(0,self.CS_bar)
-            self._dev.mode =0
-            self._dev.max_speed_hz=self.CLK
-            self._dev.bits_per_word = 8
+            # self._dev = SpiDev(0,self.CS_bar)
+            # self._dev.mode =0
+            # self._dev.max_speed_hz=self.CLK
+            # self._dev.bits_per_word = 8
+            print("SPIdev mode: speed={}",self.CLK)
         self.Init(mode)
 
     def Init(self,mode):
@@ -72,12 +74,12 @@ class MAX7219:
     def __del__(self):          # This is automatically called when the class is deleted.
         '''Delete and cleanup.'''
         self.WriteLocChar(0x0C,0x0) # Turn off
-        if self.DATA>0:
-            GPIO.cleanup(self.CLK)
-            GPIO.cleanup(self.DATA)
-            GPIO.cleanup(self.CS_bar)
-        else:
-            self._dev.close()
+        # if self.DATA>0:
+            # GPIO.cleanup(self.CLK)
+            # GPIO.cleanup(self.DATA)
+            # GPIO.cleanup(self.CS_bar)
+        # else:
+            # self._dev.close()
 
     def Clear(self):
         '''Clear the display to all blanks. (it looks off) '''
@@ -97,27 +99,32 @@ class MAX7219:
          "bit-banged" SPI on the GPIO output line.
         This is a "raw" mode write, used internally in these methods.'''
         if self.DATA>0:
-            GPIO.output(self.CS_bar,0)
-
+            # GPIO.output(self.CS_bar,0)
+            print("CS_bar->0 B:",end="")
             for i in range(16):  # send out 16 bits of data sequentially.
-                GPIO.output(self.CLK,0)
+                # GPIO.output(self.CLK,0)
                 #time.sleep(0.00001)
-                bit = data & 0x8000
-                GPIO.output(self.DATA,bit)
+                bit = int( (data & 0x8000)>0 )
+                # GPIO.output(self.DATA,bit)
+                print("{}".format(bit),end="")
                 #time.sleep(0.00001)
-                GPIO.output(self.CLK,1)
+                # GPIO.output(self.CLK,1)
                 #time.sleep(0.00001)
                 data <<=1
                 if(i==7):
-                    GPIO.output(self.CLK,0)
-                    GPIO.output(self.DATA,0)
+                    #GPIO.output(self.CLK,0)
+                    #GPIO.output(self.DATA,0)
+                    print("0",end="")
                 #    time.sleep(0.00003)
 
-            GPIO.output(self.DATA,0)
-            GPIO.output(self.CLK,0)
-            GPIO.output(self.CS_bar,1)
+            # GPIO.output(self.DATA,0)
+            print("0",end="")
+            #GPIO.output(self.CLK,0)
+            #GPIO.output(self.CS_bar,1)
+            print("  CS_bar->1")
         else:
-            self._dev.writebytes([(data>>8)&0xFF,data&0xFF]) # Write the first and second byte from data.
+            #self._dev.writebytes([(data>>8)&0xFF,data&0xFF]) # Write the first and second byte from data.
+            print("SPI: 0x{:x} 0x{:x}".format((data>>8)&0xFF,data&0xFF))
 
     def WriteLocChar(self,loc,dat):
         '''Write dat to loc. If the mode is 1 then dat is a number and loc is the location.
@@ -129,7 +136,8 @@ class MAX7219:
             #out += 0b0000000000000000  # Dummy bits
             self.WriteData(out)
         else:
-            self._dev.writebytes([loc,dat])
+            # self._dev.writebytes([loc,dat])
+            print("SPI: 0x{:x} 0x{:x}".format((dat>>8)&0xFF,dat&0xFF))
 
     def WriteRaw(self,n):
         '''Write the list of 8-bit integers to the module in raw mode'''
@@ -224,42 +232,3 @@ class MAX7219:
         '''Write something comforting to the user :-) '''
         if self.DATA>0:
             print("MAX7219 driver interface. GPIO mode: DATA={} CS_bar={} CLK={}",self.DATA,self.CS_bar,self.CLK)
-
-#
-# The code below turns this module into a program as well
-# allowing you to run it in test mode from the command line.
-#
-def main(argv):
-    '''Test the functioning of the module displaying
-    the number 12345678, and then counting down.
-    The code will use:
-    Data pin   = 4
-    CLK pin    = 5
-    CS_bar pin = 6
-    '''
-    Max_data   = 4
-    Max_clock  = 5
-    Max_cs_bar = 6
-
-# If you connect your display to the PSI interface, comment the lines above and uncomment the lines below.
-# Max_data = 0        # Use 0 for SPI connection, otherwise use GPIO pin connected to driving
-# Max_clock= 1000000  # Use clock frequency for SPI connection, otherwise use GPIO pin connected to CLK
-# Max_cs_bar = 0      # Use channel (CE0 or CE1) for SPI connection, otherwise use GPIO pin for CS
-
-    M = MAX7219(Max_data,Max_clock,Max_cs_bar)
-    num = 12345678
-    M.WriteInt(num)
-    time.sleep(1)
-    try:
-        for i in range(num,0,-1):
-            M.WriteInt(i)
-            time.sleep(0.01)
-    except KeyboardInterrupt:
-        print(" Interrupted")
-    except Exception as e:
-        print("Error")
-        print(e)
-
-if __name__ == '__main__':
-    import sys
-    main(sys.argv)
