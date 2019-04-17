@@ -29,7 +29,7 @@ BOARD_TYPE=atmega328p
 # For Phys605, this will be the atmega328p
 #
 # Other Examples: atmega168p  atmega328p  atmega168, atmega168p
-MCU=atmega168
+MCU=atmega328p
 
 # Frequency of CPU.
 # This depends on how you wired up your circuit.
@@ -41,8 +41,8 @@ MCU=atmega168
 #
 # Without a crystal, this is 1 MHz standard (1000000), or 8 MHz (8000000) with a fuse setting.
 # With a crystal, it is probably either 16 MHz or 20 MHz.
-#F_CPU=16000000
-F_CPU=20000000
+F_CPU=16000000
+#F_CPU=20000000
 #F_CPU=1000000
 #F_CPU=8000000
 #
@@ -73,7 +73,7 @@ PROGRAMMER_MCU=$(MCU)
 # file ~/.avrduderc.
 # We chose there to use the pins of the Pi as follows:
 #
-AVRDUDE_PROGRAMMERID=RaspberryPi
+AVRDUDE_PROGRAMMERID=Rpi
 
 # If you are using a programmer like the AVRISP from your
 # laptop or desktop computer, or if you are using an actual
