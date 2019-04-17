@@ -1,5 +1,4 @@
 # Installed bits
-AVR/include
 AVR/lib
 depdir
 *.a
