@@ -67,6 +67,10 @@ static int linuxgpio_export(unsigned int gpio)
   }
 
   len = snprintf(buf, sizeof(buf), "%u", gpio);
+  /*  printf("==================DEBUG CODE ==================\n");
+  printf("pin = %u \n",gpio);
+  printf("buf = %s \n",buf);
+  printf("===============================================\n"); */
   r = write(fd, buf, len);
   close(fd);
 

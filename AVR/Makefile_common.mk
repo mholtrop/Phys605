@@ -15,7 +15,7 @@
 # Specs come from SPEC file (Makefile_spec.mk), which is also used for compiling the libraries.
 # You include the SPEC file at the TOP of your Makefile.
 #
-AVR_HOME ?= ${HOME}/code/AVR
+AVR_HOME ?= ${HOME}/Phys605/AVR
 
 DEPDIR = depdir
 

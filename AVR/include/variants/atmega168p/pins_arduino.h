@@ -61,16 +61,10 @@ static const uint8_t A7 = -1;
                                   (((p) >= 23 ) && ((p) <= 28)) ?  (&PCICR) : ((uint8_t *)0))
                                                                  
 #define digitalPinToPCICRbit(p) (( ((p)>=2   && (p) <= 6) || ((p)>=11 && (p)<= 13 ) ) ? 2 : (( (p)>=14 && (p) <= 19 ) ? 0 : ( ( (p)<=28)?1:0)))
-#define digitalPinToPCMSK(p)    \
-  (( ((p)>=2   && (p) <= 6) || ((p)>=11 && (p)<= 13 ) ) ? (&PCMSK2) :	\
-  (( ((p)>= 14 && (p) <= 19) || (p) == 9 || (p) == 10) ? (&PCMSK0) :	\
-   ( ((p)>= 23 && (p) <= 28) || (p) == 1) ? (&PCMSK1) : ((uint8_t *)0)))
-/* NOTE: Not assigining pin 1 = reset, but could be set to PC6 */
-#define digitalPinToPCMSKbit(p)    (( (p) >=2  && (p) <= 6 )  ? ((p)-2)    : \
-                                   (( (p) >= 9 && (p) <= 10)  ? ((p)-3)    : \
-				   (( (p) >=11 && (p) <=13 )  ? ((p)-6)    : \
-				   (( (p) <= 19 )             ? ((p) - 14) : \
-				    ( (p) - 23  )   ))))
+#define digitalPinToPCMSK(p)    (( ((p)>=2   && (p) <= 6) || ((p)>=11 && (p)<= 13 ) ) ? (&PCMSK2) : \
+				 ( ((p)>= 14 && (p) <= 19)) ? (&PCMSK0) : \
+				 ( ((p)>= 23 && (p) <= 28)) ? (&PCMSK1) : ((uint8_t *)0))
+#define digitalPinToPCMSKbit(p)  ( ((p)>=2 && (p) <= 6 ) ? (p-2) : ( ( (p)>=11 && (p)<=13 ) ? ((p)-6) : ( ( (p) <= 19 ) ? ((p) - 14) : ((p) - 23) ) ) )
 
 #define digitalPinToInterrupt(p)  ((p) == 4 ? 0 : ((p) == 5 ? 1 : NOT_AN_INTERRUPT))
 
@@ -144,7 +138,7 @@ const uint16_t PROGMEM port_to_input_PGM[] = {
 };
 
 const uint8_t PROGMEM digital_pin_to_port_PGM[] = {
-  0,  /* 0 - x */
+  PC, /* 0 - x */
   PC, /* 1 - reset */
   PD, /* 2 */
   PD,
@@ -211,32 +205,25 @@ const uint8_t PROGMEM digital_pin_to_timer_PGM[] = {
 	NOT_ON_TIMER, /* 0 - port D */
 	NOT_ON_TIMER,
 	NOT_ON_TIMER,
+	// on the ATmega168, digital pin 3 has hardware pwm
+	TIMER2B,
+	NOT_ON_TIMER,
+	// on the ATmega168, digital pins 5 and 6 have hardware pwm
+	TIMER0B,
+	TIMER0A,
+	NOT_ON_TIMER,
+	NOT_ON_TIMER, /* 8 - port B */
+	TIMER1A,
+	TIMER1B,
+	TIMER2A,
 	NOT_ON_TIMER,
 	NOT_ON_TIMER,
-	TIMER2B, 	// on the ATmega168, digital pin 5 has hardware pwm
+	NOT_ON_TIMER,
+	NOT_ON_TIMER, /* 14 - port C */
 	NOT_ON_TIMER,
 	NOT_ON_TIMER,
 	NOT_ON_TIMER,
 	NOT_ON_TIMER,
-	NOT_ON_TIMER,
-	TIMER0B,      /* 11 PCINT21/OC0B/T1/  PD5 */
-	TIMER0A,      /* 12 PCINT22/OC0A/AIN0 PD6 */
-	NOT_ON_TIMER, /* 13 */
-	NOT_ON_TIMER, /* 14 */
-	TIMER1A,      /* 15 */
-	TIMER1B,      /* 16 */
-	TIMER2A,      /* 17 */
-	NOT_ON_TIMER, /* 18 */
-	NOT_ON_TIMER, /* 19 */
-	NOT_ON_TIMER, /* 20 AVCC */
-	NOT_ON_TIMER, /* 21 AREF */
-	NOT_ON_TIMER, /* 22 GND */
-	NOT_ON_TIMER, /* 23 */
-	NOT_ON_TIMER, /* 24 */
-	NOT_ON_TIMER, /* 25 */
-	NOT_ON_TIMER, /* 26 */
-	NOT_ON_TIMER, /* 27 */
-	NOT_ON_TIMER, /* 28 */
 };
 
 #endif
