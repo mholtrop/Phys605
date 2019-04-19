@@ -18,9 +18,17 @@
 #
 # Author: Maurik Holtrop
 # Based on the datasheet at: https://www.microchip.com/datasheet/MCP4725
+# See also: "Exploring Raspberry Pi", by Derek Molloy, pages 376, 377
 # Looked that the AdaFruit code: https://github.com/adafruit/Adafruit_CircuitPython_MCP4725.git
 #
-
+# Details of operation:
+#
+# The chip does NOT use an "address" for the register you write to, however the smbus library
+# always expects that you are writing an address, since normal I2C data is:
+#  <chip address><R/W bit> | <register address>  | <byte 0> | <byte 1> | ...
+# For this chip, we thus need to send the first byte of data as the register address,
+# and the second byte of data as byte0, etc.
+# Verified with the Analog Discovery that this is correct.
 import smbus
 
 class MCP4725(object):
@@ -78,7 +86,7 @@ class MCP4725(object):
         command = 0b01100000
         hi = (val>>4)
         lo = ((val & 0x0F) << 4)
-        self._bus.write_i2c_block_data(self._address,0x0,[0,command,hi,lo])
+        self._bus.write_i2c_block_data(self._address,command,[hi,lo])
 
 
     def write(self,val):
@@ -89,7 +97,7 @@ class MCP4725(object):
         assert 0 <= val <= 4095
         hi = val>>8
         lo = val & 0xFF
-        self._bus.write_i2c_block_data(self._address,0x0,[0,hi,lo])
+        self._bus.write_byte_data(self._address,hi,lo)
 
 
     @property
@@ -115,3 +123,23 @@ class MCP4725(object):
         assert 0.0 <= val <= 1.0
         raw_value = int(val * 4095.0)
         self.write(raw_value)
+
+def main(argv):
+    '''Test code for the MCP4725 driver.
+    This will slowly ramp the output from 0 to Vcc, then reset to 0'''
+
+    dac = MCP4725()
+    print("Starting ramp waveform. It takes about 1.3 sec to go from 0V to 3.3V in 4095 steps.")
+    try:
+        while True:
+            for i in range(4096):
+                dac.value=i
+
+    except KeyboardInterrupt:
+        sys.exit(0)
+
+
+if __name__ == '__main__':
+    import sys
+    import time
+    main(sys.argv)
