@@ -23,7 +23,7 @@
 
 import smbus
 
-class MCP4725:
+class MCP4725(object):
     """
     MCP4725 12-bit digital to analog converter.
     Parameters: bus (default=1), addr (default = 0x62)
@@ -43,27 +43,6 @@ class MCP4725:
         self._address=address            # Set by the hardware = 0b1101000
         self._buf=[]
 
-    def write(self, val):
-        pass
-
-    def write_fast_mode(self, val):
-        # Perform a 'fast mode' write to update the DAC value.
-        # Will not enter power down, update EEPROM, or any other state beyond
-        # the 12-bit DAC value.
-        assert 0 <= val <= 4095
-        try:
-            # Make sure bus is locked before write.
-            while not self._i2c.try_lock():
-                pass
-            # Build bytes to send to device with updated value.
-            val &= 0xFFF
-            self._BUFFER[0] = _MCP4725_WRITE_FAST_MODE | (val >> 8)
-            self._BUFFER[1] = val & 0xFF
-            self._i2c.writeto(self._address, self._BUFFER, end=2)
-        finally:
-            # Ensure bus is always unlocked.
-            self._i2c.unlock()
-
     def read_full(self):
         '''
         Perform a read on the device DAC and EEPROM
@@ -74,10 +53,10 @@ class MCP4725:
 
         Normal operation will have Ready =1, POR=1, PD1=0, PD2=0
         '''
-        vals = self._bus.read_i2c_block_data(self._address,0x0,4)
+        val = self._bus.read_i2c_block_data(self._address,0x0,5)
         status = ((val[0]>>4)&0b00001100) + ((val[0]>>1)&0b00000011)
         dac = (val[1]<<4) +(val[2]>>4)
-        eeprom = ((val[3]&0b00001111)<<4) + val[4]
+        eeprom = ((val[3]&0b00001111)<<8) + val[4]
         return(dac,eeprom,status)
 
     def read(self):
