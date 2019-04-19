@@ -86,7 +86,7 @@ class MCP4725:
         Returns: DAC value as 12-bit integer.
         This is equivalent to reading .value
         '''
-        vals = self._bus.read_i2c_block_data(self._address,0x0,3)
+        val = self._bus.read_i2c_block_data(self._address,0x0,3)
         status = ((val[0]>>4)&0b00001100) + ((val[0]>>1)&0b00000011)
         dac = (val[1]<<4) +(val[2]>>4)
         return(dac)
@@ -100,7 +100,7 @@ class MCP4725:
         hi = (val>>4)
         lo = ((val & 0x0F) << 4)
         self._bus.write_i2c_block_data(self._address,0x0,[0,command,hi,lo])
-        
+
 
     def write(self,val):
         '''
