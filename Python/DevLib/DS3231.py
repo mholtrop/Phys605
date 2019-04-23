@@ -8,7 +8,7 @@
 # To see if the DS3231 is available on the bus execute:
 #  sudo i2cdetect -y 1
 #
-# I2C Bus access for Python, see: https://pypi.python.org/pypi/smbus2/0.2.0
+# I2C Bus access for Python, see: https://pypi.python.org/pypi/smbus2
 #
 # Author: Maurik Holtrop
 #
@@ -56,7 +56,7 @@ from datetime import datetime
 import smbus
 
 
-class DS3231:
+class DS3231(object):
     def __init__(self,bus=1,address=0x68):
         '''This class opens the I2C bus using smbus and then reads the DS3231 RTC chip
         which should be at address 0x68 on I2C channel 1 for a Raspberry Pi.
@@ -111,8 +111,72 @@ class DS3231:
         LSB_temp = self._bus.read_byte_data(self._address,0x12)
         return(MSB_temp + 0.25*((LSB_temp)>>6) )
 
-    def Set32kHz(self):
+    def GetStatus(self):
+        '''Return the status register 0x0F'''
+        status=self._bus.read_byte_data(self._address,0x0F)
+        return(status)
+
+    def SetStatus(self,val):
+        '''Set the status register 0x0F'''
+        self._bus.write_byte_data(self._address,0x0F,val)
+
+    def Enable32kHz(self):
         '''Set the 32k output pin to oscillate a square wave at about 32kHz'''
+        status = self.GetStatus()
+        status = status | 0x08    # Set bit3
+        self.SetStatus(status)
+
+    def Disable32kHz(self):
+        '''Set the 32k output pin to NOT oscillate.'''
+        status = self.GetStatus()
+        status = status & (0x08 ^ 0xFF) # Unset bit3
+        self.SetStatus(status)
+
+    def Status32kHz(self):
+        '''Return 1 when 32 kHz pin is enabled, 0 if disabled.'''
+        status=self.GetStatus()
+        return( (status&0x08)>>3)
+
+    def GetControl(self):
+        '''Return the control/status register 0x0E'''
+        status=self._bus.read_byte_data(self._address,0x0E)
+        return(status)
+
+    def SetControl(self,val):
+        '''Set the control/status register 0x0E'''
+        self._bus.write_byte_data(self._address,0x0E,val)
+
+    def EnableSQW(self):
+        '''Enable the SQW output '''
+        control = self.GetControl()
+        control = control & (0x04 ^ 0xFF) # Unset bit2
+        self.SetControl(control)
+
+    def DisableSQW(self):
+        '''Disable the SQW output '''
+        control = self.GetControl()
+        control = control | (0x04) # Set bit2
+        self.SetControl(control)
+
+    def StatusSQW(self):
+        '''Return 1 if SQW is enable, 0 if it is not.'''
+        control = self.GetControl()
+        return( ((control&0x04)>>2)^0x01 )  # Return the complement of bit2
+
+    def SetSQWFreq(self,choice):
+        '''Set the SQW frequencey:
+        0 = 1 Hz
+        1 = 1.024 kHz
+        2 = 4.096 kHz
+        3 = 8.192 kHz
+        '''
+        assert 0 <= choice <= 3
+        control = self.GetControl()
+        control = control & 0xE7
+        control  = control | (choice<<3)
+        self.SetControl(control)
+
+        
 
 
     def SetToNow(self):
@@ -148,6 +212,21 @@ class DS3231:
         '''Set the alarm2 on the DS3231. '''
         print("Implement me!")
 
+    def __str__(self):
+        '''Return current time as string.'''
+        return( str(self.GetDateTime()))
+
+    @property
+    def datetime(self):
+        """
+        The time according to the RTC clock as a datetime.
+        """
+        return(self.GetDateTime())
+
+    @datetime.setter
+    def datetime(self, val):
+        self.SetTim(val)
+
 def main(argv):
     '''Test code for the DS3231 driver.
     This will simply print the time and the temperature as provided by the device.'''
@@ -155,7 +234,7 @@ def main(argv):
     T = DS3231()
     dt = T.GetDateTime()
     temp=T.GetTemp()
-    print("It is now {} UTC".format(dt.strftime("%c")))
+    print("It is now {}".format(dt.strftime("%c")))
     print("Temp: {:6.3f}C".format(temp))
 
 
