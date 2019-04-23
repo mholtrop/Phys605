@@ -41,7 +41,7 @@ class MCP4725(object):
     # Note this is not thread-safe or re-entrant by design!
     _BUFFER = bytearray(3)
 
-    def __init__(self, bus=1, address=0x62):
+    def __init__(self, bus=1, address=0x62,vdd=3.3):
         try:
             self._bus = smbus.SMBus(bus)
         except IOError:
@@ -50,6 +50,15 @@ class MCP4725(object):
 
         self._address=address            # Set by the hardware = 0b1101000
         self._buf=[]
+        self._vdd = vdd                  # Reference Value
+
+    def set_vref(self,value):
+        '''
+        Set the reference value on Vcc = Vdd.
+        This is the reference for the DAC. The output will be a maximum of this value.
+        Set this to the value on the Vcc pin of the breakout. Default is 3.3V.
+        '''
+        self._vdd = value
 
     def read_full(self):
         '''
@@ -123,6 +132,22 @@ class MCP4725(object):
         assert 0.0 <= val <= 1.0
         raw_value = int(val * 4095.0)
         self.write(raw_value)
+
+    @property
+    def volts(self):
+        """
+        The value of the output in Volts.
+        This requires set_vref to be set correctly to the voltage on the Vcc pin.
+        """
+        return(self._vdd*self.read()/4095)
+
+    @volts.setter
+    def volts(self, vin):
+        assert 0. <= vin <= self._vdd
+        raw_value = int(4095.0*vin/self._vdd)
+        self.write(raw_value)
+
+
 
 def main(argv):
     '''Test code for the MCP4725 driver.
