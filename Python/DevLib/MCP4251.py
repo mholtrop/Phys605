@@ -47,7 +47,7 @@
 import RPi.GPIO as GPIO
 import spidev
 
-class MCP4251:
+class MCP4251(object):
 
     def __init__(self,CS_bar_pin,CLK_pin=10000000,MOSI_pin=0,MISO_pin=0,chip=None):
         '''Initialize the code and set the GPIO pins.
