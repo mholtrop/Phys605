@@ -27,7 +27,7 @@
 # This driver only supports the 0,0 mode.
 #
 # If the device is connected to the hardware SPI:
-# The MCP42xx devices have separate SDO and SDI pins, and can communicate at the full 10MHz SPI clockself.
+# The MCP42xx devices have separate SDO and SDI pins, and can communicate at the full 10MHz SPI clock.
 # For the MCP41x1 devices, you have a SDI/SDO combined pin. This pin is connected directly
 # to the MISO pin, and with a resistor to the MOSI pin on the RaspberryPi.
 # With a 10kOhm resistor I could get reliable data transfer at 250kHz clock speed, but not at 500kHz.
@@ -37,6 +37,11 @@
 # To accomodate high speed writing for the MCP41x1 devices, the clock speed is adjusted for These
 # chips when using hardware SPI
 #
+# Note for Bit Bang: On a standard Raspberry Pi 3, the maximum bit-bang frequency that I measured
+# with the current version of this code, using ipython3, was about 85 kHz for one of the pulses of the clock.
+# Since there is nothing in this code limiting the bit-bang speed, a faster RPi, or faster version of
+# Python, may exceed the 250kHz maximum speed of the MCP4161.
+#
 
 
 import RPi.GPIO as GPIO
@@ -44,7 +49,7 @@ import spidev
 
 class MCP4251:
 
-    def __init__(self,CS_bar_pin,CLK_pin=10000000,MOSI_pin=0,MISO_pin=0,chip='MCP4251'):
+    def __init__(self,CS_bar_pin,CLK_pin=10000000,MOSI_pin=0,MISO_pin=0,chip=None):
         '''Initialize the code and set the GPIO pins.
         If MOSI_pin = 0, the code assumes hardware SPI mode, in which case the
         CLK_pin number is taken as the maximum clock speed desired. This clock speed
@@ -58,23 +63,27 @@ class MCP4251:
         self.CS_bar = CS_bar_pin
 
         self._CMDERR_bit=0b00000010  # Seventh bit send out is the ERROR bit.
-        # Dictionary: chip_name: (channels, readspeed, writespeed)
+        # Dictionary: chip_name: (channels, readspeed, writespeed,steps,I/O type)
+        # I/O type can be 0 for 2 channel SPI or 1 for SDO/SDI combined.
+        # This is only relevant when you use the BITBANG SPI mode.
+        #
         chip_dict={
-            'MCP4251':(2,10000000,10000000),
-            'MCP4161':(1,250000,5000000)}
+            'MCP4251':(2,10000000,10000000,256,0),
+            'MCP4161':(1,250000,5000000,256,1)}
 
         if chip in chip_dict:
-            self.Nchannels    =    chip_dict[chip][0]
-            self.MaxReadSpeed =min(chip_dict[chip][1],CLK_pin)
-            self.MaxWriteSpeed=min(chip_dict[chip][2],CLK_pin)
+            self._chip = chip_dict[chip]
+            self.Nchannels    =  self._chip[0]
+            self.MaxReadSpeed =min(self._chip[1],CLK_pin)
+            self.MaxWriteSpeed=min(self._chip[2],CLK_pin)
         else:
-            print("Chip is not known yet, please add to dictionary:",chip)
-            self.Nchannels=2
-            self.MaxReadSpeed=min(250000,CLK_pin)
-            self.MaxWriteSpeed=min(250000,CLK_pin)
+            print("Chip not specified or not known yet, please add to dictionary:",chip)
+            raise("Chip not OK error")
 
         if self.MOSI > 0:  # Bing Bang mode
             assert self.MISO !=0 and self.CLK < 32
+            if self._chip[4] == 1:
+                 assert self.MOSI == self.MISO
             if GPIO.getmode() != 11:
                 GPIO.setmode(GPIO.BCM)        # Use the BCM numbering scheme
 
@@ -107,7 +116,7 @@ class MCP4251:
             if self.Nchannels > 1:
                 GPIO.cleanup(self.MISO)
 
-    def SendBits(self,bits,num):
+    def _SendBits(self,bits,num):
         ''' Send out a stream of bits, MSB first, on GPIO'''
         if self.MOSI == 0:
             return
@@ -127,7 +136,7 @@ class MCP4251:
 
 
 
-    def ReadBits(self,num):
+    def _ReadBits(self,num):
         ''' Read a single bit from the ADC and pulse clock.'''
         if self.MOSI == 0:
             return 0
@@ -146,7 +155,7 @@ class MCP4251:
 
         return(out)
 
-    def WriteWords(self,data):
+    def _WriteWords(self,data):
         '''Write the data in "data" to the device, and return the answer.
         Data is a list of 8-bit words to be written. The same number of words is returned.
         Note that bit-banged single pin operation is treaded seprately.'''
@@ -179,24 +188,24 @@ class MCP4251:
                 address = (d>>4)
                 command = ((d & 0b1100)>>2)
                 highbit = d&0b01
-                self.SendBits(address,4) # Send the 4 address bits.
-                self.SendBits(command,2) # Send the 2 command bits.
-                ack_bit=self.ReadBits(1) # Read the acknowledge bit.
+                self._SendBits(address,4) # Send the 4 address bits.
+                self._SendBits(command,2) # Send the 2 command bits.
+                ack_bit=self._ReadBits(1) # Read the acknowledge bit.
                 if command == 0b00:      # Write operation
-                    self.SendBits(highbit,1)
-                    self.SendBits(data[l+1],8)
+                    self._SendBits(highbit,1)
+                    self._SendBits(data[l+1],8)
                     l += 1
                     answer.append( (ack_bit<<1))
                     answer.append(0)
                 elif command == 0b11:      # Read Operation.
-                    ans = self.ReadBits(1) # Read the high bit.
+                    ans = self._ReadBits(1) # Read the high bit.
                     ans += (ack_bit<<1)
                     answer.append(ans)
-                    ans = self.ReadBits(8) # Read the answer
+                    ans = self._ReadBits(8) # Read the answer
                     answer.append(ans)
                     l += 1                 # Skip the dummy word.
                 else:
-                    ans = self.ReadBits(1) # Read the high bit.
+                    ans = self._ReadBits(1) # Read the high bit.
                     ans += (ack_bit<<1)
                     answer.append(ans)     # There is no dummy word!
 
@@ -212,7 +221,7 @@ class MCP4251:
             GPIO.output(self.MOSI,0)    # and MOSI is low.
         return(answer)  # Return answer
 
-    def ReadAddress(self,addr):
+    def _ReadAddress(self,addr):
         '''Read an address from the chip and return it.
         Returns None if the read had an error.'''
         low_word=0xFF                               # The read part must be high for the 4161 chips.
@@ -220,7 +229,7 @@ class MCP4251:
         if self.MOSI==0:                        # Set slower read on spidev.
             self._dev.max_speed_hz=self.MaxReadSpeed
 
-        ans=self.WriteWords([command,low_word])
+        ans=self._WriteWords([command,low_word])
 
         if self.MOSI==0:                        # Restore to write speed on spidev.
             self._dev.max_speed_hz=self.MaxWriteSpeed
@@ -230,12 +239,11 @@ class MCP4251:
         else:
             return(None)                    # Error
 
-    def WriteAddress(self,addr,data):
-        '''Write the wiper value from the chip and return it.
-        Returns None if the read had an error.'''
+    def _WriteAddress(self,addr,data):
+        '''Write data to addr on the chip.'''
         low_word= data&0xFF                  # Low 8 bits of data
         command = ((addr&0x0F)<<4) + 0b0010 + ((data&0x100)>>8)   # Address (4bits), write (00), 1, highbit
-        ans=self.WriteWords([command,low_word])
+        ans=self._WriteWords([command,low_word])
         if( (ans[0]&self._CMDERR_bit)>0):
             return(ans[1]+ ( (ans[0]&0b01)<<8) )
         else:
@@ -246,95 +254,128 @@ class MCP4251:
         '''Set the wiper to setpoint. Setpoint can be between 0 and MAX inclusive,
         where MAX is 256 for the MCP4251
         Returns True if status is OK'''
+        assert 0<= wiper < self._chip[0]
+        assert 0<= setpoint <= self.GetWiperMax()
         addr = wiper&0b01 # Address (0 or 1) and command (00) and hi bit
-        ans=self.WriteAddress(addr,setpoint) # Send/receive data.
+        ans=self._WriteAddress(addr,setpoint) # Send/receive data.
         return(ans)    # Return True if status OK
 
     def ReadWiper(self,wiper=0):
         '''Read the wiper value from the chip and return it.
         Returns None if the read had an error.'''
+        assert 0<= wiper < self._chip[0]
         addr = wiper&0b01
-        ans=self.ReadAddress(addr)
+        ans=self._ReadAddress(addr)
         return(ans)
+
+    @property
+    def wiper(self):
+        """The wiper of the variable resistor"""
+        return(self.ReadWiper(0))
+
+    @wiper.setter
+    def wiper(self,value):
+        return(self.SetWiper(value,0))
+
+    @property
+    def wiper2(self):
+        """The wiper of the variable resistor"""
+        return(self.ReadWiper(1))
+
+    @wiper2.setter
+    def wiper2(self,value):
+        return(self.SetWiper(value,1))
+
+    def GetWiperMax(self):
+        """Return the maximum possible value for wiper. """
+        return(self._chip[3])
 
     def IncrementWiper(self,wiper=0):
         '''Increment the wiper by one setting. Returns True is successful'''
+        assert 0<= wiper < self._chip[0]
         command = ((wiper&0b01)<<4) + 0b0111   # Address (0 or 1) and INCR command.
-        ans=self.WriteWords([command])
+        ans=self._WriteWords([command])
         return((ans[0]&self._CMDERR_bit)>0)
 
     def DecrementWiper(self,wiper=0):
         '''Decrement the wiper by one setting. Returns True is successful'''
+        assert 0<= wiper < self._chip[0]
         command = ((wiper&0b01)<<4) + 0b1011   # Address (0 or 1) and DECR command.
-        ans=self.WriteWords([command])
+        ans=self._WriteWords([command])
         return((ans[0]&self._CMDERR_bit)>0)
 
     def Reset(self):
         '''Reset the chip:
         Connect the wipers and A,B contacts and set them in the middle.'''
-        self.SetWiper(128,0)
+        self.SetWiper(self.GetWiperMax()//2,0)
         if self.Nchannels == 2:
-            self.SetWiper(128,1)
-        self.WriteWords([0b01000001,0xFF])        # Write the TCON to all connected, no shutdown.
+            self.SetWiper(self.GetWiperMax()//2,1)
+        self._WriteWords([0b01000001,0xFF])        # Write the TCON to all connected, no shutdown.
 
     def DisconnectWiper(self,wiper=0):
         '''Disconnect the W terminal from the wiper'''
-        stat,tcon = self.WriteWords([0b01001100,0]) # Read address=4
+        assert 0<= wiper < self._chip[0]
+        stat,tcon = self._WriteWords([0b01001100,0]) # Read address=4
         if(wiper==0):
             tcon = tcon & 0b11111101
         else:
             tcon = tcon & 0b11011111
-        ans = self.WriteWords([0b01000001,tcon])
+        ans = self._WriteWords([0b01000001,tcon])
         return((ans[0]&self._CMDERR_bit)>0)
 
     def ConnectWiper(self,wiper=0):
         '''Connect the W terminal from the wiper'''
-        stat,tcon = self.WriteWords([0b01001100,0]) # Read address=4
+        assert 0<= wiper < self._chip[0]
+        stat,tcon = self._WriteWords([0b01001100,0]) # Read address=4
         if(wiper==0):
             tcon = tcon | 0b00000010
         else:
             tcon = tcon | 0b00100000
-        ans = self.WriteWords([0b01000001,tcon])
+        ans = self._WriteWords([0b01000001,tcon])
         return((ans[0]&self._CMDERR_bit)>0)
 
     def DisconnectA(self,wiper=0):
         '''Disconnect the A terminal from the array'''
-        stat,tcon = self.WriteWords([0b01001100,0]) # Read address=4
+        assert 0<= wiper < self._chip[0]
+        stat,tcon = self._WriteWords([0b01001100,0]) # Read address=4
         if(wiper==0):
             tcon = tcon & 0b11111011
         else:
             tcon = tcon & 0b10111111
-        ans = self.WriteWords([0b01000001,tcon])
+        ans = self._WriteWords([0b01000001,tcon])
         return((ans[0]&self._CMDERR_bit)>0)
 
     def ConnectA(self,wiper=0):
         '''Connect the A terminal from the array'''
-        stat,tcon = self.WriteWords([0b01001100,0]) # Read address=4
+        assert 0<= wiper < self._chip[0]
+        stat,tcon = self._WriteWords([0b01001100,0]) # Read address=4
         if(wiper==0):
             tcon = tcon | 0b00000100
         else:
             tcon = tcon | 0b01000000
-        ans = self.WriteWords([0b01000001,tcon])
+        ans = self._WriteWords([0b01000001,tcon])
         return((ans[0]&self._CMDERR_bit)>0)
 
     def DisconnectB(self,wiper=0):
-        '''Disconnect the A terminal from the array'''
-        stat,tcon = self.WriteWords([0b01001100,0]) # Read address=4
+        '''Disconnect the B terminal from the array'''
+        assert 0<= wiper < self._chip[0]
+        stat,tcon = self._WriteWords([0b01001100,0]) # Read address=4
         if(wiper==0):
             tcon = tcon & 0b11111110
         else:
             tcon = tcon & 0b11101111
-        ans = self.WriteWords([0b01000001,tcon])
+        ans = self._WriteWords([0b01000001,tcon])
         return((ans[0]&self._CMDERR_bit)>0)
 
     def ConnectB(self,wiper=0):
-        '''Connect the A terminal from the array'''
-        stat,tcon = self.WriteWords([0b01001100,0]) # Read address=4
+        '''Connect the B terminal from the array'''
+        assert 0<= wiper < self._chip[0]
+        stat,tcon = self._WriteWords([0b01001100,0]) # Read address=4
         if(wiper==0):
             tcon = tcon | 0b00000001
         else:
             tcon = tcon | 0b00010000
-        ans = self.WriteWords([0b01000001,tcon])
+        ans = self._WriteWords([0b01000001,tcon])
         return((ans[0]&self._CMDERR_bit)>0)
 
 def main(argv):
@@ -361,20 +402,21 @@ def main(argv):
         miso_pin= int(argv[4])
         channel = int(argv[5])
 
-    P = MCP4251(cs_bar,clk_pin,mosi_pin,miso_pin)
+    print("We assume that you are using an MCP4251 chip!")
+    P = MCP4251(cs_bar,clk_pin,mosi_pin,miso_pin,chip="MCP4251")
     try:
         P.SetWiper(0,0)
         wiper=0
-        for i in range(256/8):
+        for i in range(P.GetWiperMax()/8):
             P.SetWiper(wiper,0)
-            value = 3.3*wiper/256.
+            value = 3.3*wiper/float(P.GetWiperMax())
             print("Volt meter should read {:6.3f}".format(value))
             wiper += 8
             time.sleep(1)
-        for i in range(256):
+        for i in range(P.GetWiperMax()):
             P.DecrementWiper(0)
             wiper=P.ReadWiper(0)
-            value = 3.3*wiper/256.
+            value = 3.3*wiper/float(P.GetWiperMax())
             print("Volt meter should read {:6.3f}".format(value))
             time.sleep(1)
 
