@@ -17,7 +17,7 @@ except:
     pass
 
 import spidev
-import BBSpiDev
+from DevLib import BBSpiDev
 
 import time
 
