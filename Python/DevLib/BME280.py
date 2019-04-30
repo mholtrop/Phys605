@@ -46,11 +46,11 @@ class BME280:
     _DEV_READ_ADDRESS = 0xF7
     _DEV_READ_LEN=8
 
-    def __init__(self,address=0x76):
-        '''Initialize the class. The only argument is the I2C address, which is either 0x76 (SDO pin low)
-        or 0x77 (SDO pin high)'''
+    def __init__(self,address=0x76,bus=1):
+        '''Initialize the class. The arguments: I2C address, which is either 0x76 (SDO pin low)
+        or 0x77 (SDO pin high), and bus, which is 1 for RPi and can be 0,1,2 for BeagleBone'''
 
-        self._dev = smbus.SMBus(1)
+        self._dev = smbus.SMBus(bus)
         self._dev_address = address
         # Get the device ID from the device.
         self._dev_id =self._dev.read_byte_data(self._dev_address,self._DEVICE_ID)
@@ -100,9 +100,10 @@ class BME280:
     def Get_Status(self):
         '''Get the device status bits:
         bit0 = "Non Volatile Memory read/write in progress"
-        bit1 = "Measurement conversion in progress" '''
+        bit3 = "Measurement conversion in progress"
+        Other bits are not defined.'''
         status=self._dev.read_byte_data(self._dev_address,self._STATUS_REG)
-        return(status&0b0101)
+        return(status)
 
     def Get_Oversampling(self):
         '''Read the control register of the device and return the oversampling rates

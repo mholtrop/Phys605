@@ -42,9 +42,14 @@
 # Since there is nothing in this code limiting the bit-bang speed, a faster RPi, or faster version of
 # Python, may exceed the 250kHz maximum speed of the MCP4161.
 #
+try:
+    import RPi.GPIO as GPIO
+except:
+    try:
+        import Adafruit_BBIO as GPIO
+    except:
+        raise("Could not find a GPIO library")
 
-
-import RPi.GPIO as GPIO
 import spidev
 
 class MCP4251(object):

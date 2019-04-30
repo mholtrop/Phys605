@@ -7,8 +7,18 @@
 #
 # Author: Maurik Holtrop
 #
-import RPi.GPIO as GPIO
-from spidev import SpiDev
+try:
+    import RPi.GPIO as GPIO
+except:
+    pass
+try:
+    import Adafruit_BBIO as GPIO
+except:
+    pass
+
+import spidev
+import BBSpiDev
+
 import time
 
 class MAX7219:
@@ -23,7 +33,7 @@ class MAX7219:
         -------
         This code expects the pin numbers in the BSM standard.
         The Raspberry Pi interfacing is done through the RPi.GPIO module
-        or the spi module'''
+        or the spidev module, the BBB with Adafruit_BBIO or spidev module'''
 
         self.DATA = DATA_pin
         self.CS_bar = CS_bar_pin
@@ -31,22 +41,20 @@ class MAX7219:
         self.Mode = mode
         self._dev = None
 
-        if self.DATA>0:
-            GPIO.setmode(GPIO.BCM)
-            GPIO.setup(self.CLK,GPIO.OUT)
-            GPIO.setup(self.DATA,GPIO.OUT)
-            GPIO.setup(self.CS_bar,GPIO.OUT)
-
-            GPIO.output(self.CLK,0)
-            GPIO.output(self.DATA,0)
-            GPIO.output(self.CS_bar,1)
-        else:
-            if self.CLK < 100:
+        if self.DATA==0:
+            self.DATA=None
+        if self.DATA is None:
+            if self.CLK < 1:
                 self.CLK=1000000
-            self._dev = SpiDev(0,self.CS_bar)
-            self._dev.mode =0
-            self._dev.max_speed_hz=self.CLK
-            self._dev.bits_per_word = 8
+            # Initialize the SPI hardware device
+            self._dev = spidev.SpiDev(0,self.CS_bar)
+        else:
+            self._dev = BBSpiDev.BBSpiDev(self.CS_bar,self.CLK,self.DATA,None)
+
+        self._dev.mode =0
+        self._dev.max_speed_hz=self.CLK
+        self._dev.bits_per_word = 8
+
         self.Init(mode)
 
     def Init(self,mode):
@@ -72,12 +80,7 @@ class MAX7219:
     def __del__(self):          # This is automatically called when the class is deleted.
         '''Delete and cleanup.'''
         self.WriteLocChar(0x0C,0x0) # Turn off
-        if self.DATA>0:
-            GPIO.cleanup(self.CLK)
-            GPIO.cleanup(self.DATA)
-            GPIO.cleanup(self.CS_bar)
-        else:
-            self._dev.close()
+        self._dev.close()
 
     def Clear(self):
         '''Clear the display to all blanks. (it looks off) '''
@@ -96,58 +99,26 @@ class MAX7219:
         '''Write the 16 bit data to the output using SPI or
          "bit-banged" SPI on the GPIO output line.
         This is a "raw" mode write, used internally in these methods.'''
-        if self.DATA>0:
-            GPIO.output(self.CS_bar,0)
-
-            for i in range(16):  # send out 16 bits of data sequentially.
-                GPIO.output(self.CLK,0)
-                #time.sleep(0.00001)
-                bit = data & 0x8000
-                GPIO.output(self.DATA,bit)
-                #time.sleep(0.00001)
-                GPIO.output(self.CLK,1)
-                #time.sleep(0.00001)
-                data <<=1
-                if(i==7):
-                    GPIO.output(self.CLK,0)
-                    GPIO.output(self.DATA,0)
-                #    time.sleep(0.00003)
-
-            GPIO.output(self.DATA,0)
-            GPIO.output(self.CLK,0)
-            GPIO.output(self.CS_bar,1)
-        else:
-            self._dev.writebytes([(data>>8)&0xFF,data&0xFF]) # Write the first and second byte from data.
+        self._dev.writebytes([(data>>8)&0xFF,data&0xFF]) # Write the first and second byte from data.
 
     def WriteLocChar(self,loc,dat):
         '''Write dat to loc. If the mode is 1 then dat is a number and loc is the location.
-        If mode is 0 then dat is an 8 bit LED position.
+        If mode is 2 then dat is an 8 bit LED position.
         This is used internally to display the numbers/characters.'''
-        if self.DATA>0:
-            out = (loc <<8)
-            out += dat
-            #out += 0b0000000000000000  # Dummy bits
-            self.WriteData(out)
-        else:
-            self._dev.writebytes([loc,dat])
-
-    def WriteRaw(self,n):
-        '''Write the list of 8-bit integers to the module in raw mode'''
-        if self.Mode != 0:
-            raise ValueError()
-        if type(n) is int:
-            print("please provide an tuple or list")
-
-        for i in range(len(n)):
-            self.WriteLocChar(i+1,n[i])
-
+        # if self.DATA is not None:
+        #     out = (loc <<8)
+        #     out += dat
+        #     #out += 0b0000000000000000  # Dummy bits
+        #     self.WriteData(out)
+        # else:
+        self._dev.writebytes([loc,dat])
 
     def WriteInt(self,n):
         ''' Write the integer n on the display, shifted left. If n is larger (smaller) than
         fits, an overflow is indicated by all dash.'''
 
         if self.Mode != 1:
-            raise ValueError()
+            raise ValueError();
 
         if n > 99999999 or n< -9999999: # Display overflow, --------
             for i in range(8):
@@ -236,17 +207,27 @@ def main(argv):
     Data pin   = 4
     CLK pin    = 5
     CS_bar pin = 6
+    Unless different pins are specified on the command line.
     '''
-    Max_data   = 4
-    Max_clock  = 5
-    Max_cs_bar = 6
 
-# If you connect your display to the PSI interface, comment the lines above and uncomment the lines below.
-# Max_data = 0        # Use 0 for SPI connection, otherwise use GPIO pin connected to driving
-# Max_clock= 1000000  # Use clock frequency for SPI connection, otherwise use GPIO pin connected to CLK
-# Max_cs_bar = 0      # Use channel (CE0 or CE1) for SPI connection, otherwise use GPIO pin for CS
+    if len(argv) < 4:
+        Max_data   = 4
+        Max_clock  = 5
+        Max_cs_bar = 6
+        print("Using bit bang mode DIN->{} CLK->{} CS->{} ".format(Max_data,Max_clock,Max_cs_bar))
+    else:
+        if int(argv[1]) == 0:
+            Max_data = None
+        else:
+            Max_data  =int(argv[1])
+        Max_clock =int(argv[2])
+        Max_cs_bar=int(argv[3])
+        if Max_data:
+            print("Using bit bang mode DIN->{} CLK->{} CS->{} ".format(Max_data,Max_clock,Max_cs_bar))
+        else:
+            print("Using SPIdev with CLK->{} CS->{} ".format(Max_clock,Max_cs_bar))
 
-    M = MAX7219(Max_data,Max_clock,Max_cs_bar)
+    M = MAX7219(CS_bar_pin=Max_cs_bar,CLK_pin=Max_clock,DATA_pin=Max_data)
     num = 12345678
     M.WriteInt(num)
     time.sleep(1)
