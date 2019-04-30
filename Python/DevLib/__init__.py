@@ -14,4 +14,5 @@ from .MAX7219    import MAX7219
 from .MCP320x    import MCP320x
 from .MCP4251    import MCP4251
 from .MCP4725    import MCP4725
+from .MCP4822    import MCP4822
 from .SN74HC165  import SN74HC165
