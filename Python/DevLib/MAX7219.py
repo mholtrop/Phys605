@@ -49,7 +49,7 @@ class MAX7219:
             # Initialize the SPI hardware device
             self._dev = spidev.SpiDev(0,self.CS_bar)
         else:
-            self._dev = BBSpiDev.BBSpiDev(self.CS_bar,self.CLK,self.DATA,None)
+            self._dev = BBSpiDev(self.CS_bar,self.CLK,self.DATA,None)
 
         self._dev.mode =0
         self._dev.max_speed_hz=self.CLK
