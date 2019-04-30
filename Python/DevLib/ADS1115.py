@@ -98,6 +98,41 @@ class ADS1115(object):
     }
     ADS1115_CONFIG_DATARATE_REV = {v: k for k, v in ADS1115_CONFIG_DATARATE.items()}
 
+    class my_values:
+        """Class for getting the value of the chip, which mimics a list."""
+        def __init__(self,getter,MAX):
+            self._getter = getter
+            self._MAX = MAX
+            self._n = 0
+
+        def __getitem__(self,idx):
+            return(self._getter(idx))
+
+        def __setitem__(self,idx,val):
+            raise ValueError("The ADC values cannot be written to, only read.")
+
+        def __len__(self):
+            return(self._MAX)
+
+        def __iter__(self):
+            self._n=0
+            return(self)
+
+        def __next__(self):
+            if self._n < len(self):
+                result = self[self._n]
+                self._n += 1
+                return(result)
+            else:
+                raise StopIteration
+
+        def __repr__(self):
+            return(str(self))
+
+        def __str__(self):
+            tmplist = [ x for x in self ]
+            return(str(tmplist))
+
     def __init__(self, bus=1, address=0x48):
         try:
             self._bus = smbus.SMBus(bus)
@@ -106,11 +141,14 @@ class ADS1115(object):
             return(None)
 
         self._address=address            # Set by the hardware = 0b1101000
-        self._buf=[]
+        self._MAX_channel = 4
         self._conversion_mode = self.read_mode()      # The conversion mode. Stored for convenience
         self._data_rate = self.read_rate()            # The conversion rate. Stored for convenience
         self._FSR = self.read_fullscale()             # The full scale. Stored for convenience.
         self._input,self._differential = self.read_input() # Input channel and differentual mode ,,
+
+        self._values = self.my_values(self.read_adc,self._MAX_channel)
+        self._volts  = self.my_values(self.read_volts,self._MAX_channel)
 
     def _read_adc(self):
         """ Read and return the conversion register."""
@@ -226,7 +264,7 @@ class ADS1115(object):
         differential: Boolean
             Whether to read differential (1 or True) or absolute (0 or False).
         """
-        assert 0<= channel < 4
+        assert 0<= channel < self._MAX_channel
         self._input = channel
         self._differential = differential
         if not differential:
@@ -319,14 +357,14 @@ class ADS1115(object):
         return(out)
 
     @property
-    def adc(self):
-        """ADC value for current input as integer"""
-        return( self.read_adc() )
+    def values(self):
+        """ADC values presented as a list."""
+        return( self._values )
 
     @property
     def volts(self):
-        """ADC value for current input converted to volts."""
-        return( self.read_volts() )
+        """ADC voltages presented as a list"""
+        return( self._volts )
 
     @property
     def accuracy(self):
