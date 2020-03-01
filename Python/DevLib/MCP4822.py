@@ -29,7 +29,7 @@ except:
         raise("Could not find a GPIO library")
 
 import spidev
-from DevLib import BBSpiDev
+# from DevLib import BBSpiDev
 
 class MCP4822(object):
 
