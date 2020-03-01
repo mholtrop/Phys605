@@ -39,14 +39,21 @@
 # From MCP3208 datasheet:
 # Outging data : MCU latches data to A/D converter on rising edges of SCLK
 # Incoming data: Data is clocked out of A/D converter on falling edges, so should be read on rising edge.
+try:
+    import RPi.GPIO as GPIO
+except:
+    pass
+try:
+    import Adafruit_BBIO as GPIO
+except:
+    pass
 
-import RPi.GPIO as GPIO
 import spidev
 
 class MCP320x:
 
     def __init__(self,CS_bar_pin,CLK_pin=1000000,MOSI_pin=0,MISO_pin=0,chip='MCP3208',
-                 channel_max=None,bit_length=None,single_ended=1):
+                 channel_max=None,bit_length=None,single_ended=True):
         '''Initialize the code and set the GPIO pins.
         The last argument, ch_max, is 2 for the MCP3202, 4 for the
         MCP3204 or 8 for the MCS3208'''
@@ -87,7 +94,7 @@ class MCP320x:
         # control[1] - bit7   : D1 middle bit of channel select.
         #            - bit6   : D0 low bit of channel select.
         #            - bit5-0 : Don't care.
-        if self.Single_ended_mode==0:
+        if self.Single_ended_mode:
             self._control0=[0b00000100,0b00100000,0]  # Pre-compute part of the control word.
         else:
             self._control0=[0b00000110,0b00100000,0]  # Pre-compute part of the control word.

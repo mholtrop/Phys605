@@ -22,8 +22,16 @@
 #
 # The phase bits shift the output by 11.25 degrees time the value.
 #
-import RPi.GPIO as GPIO
 import time
+try:
+    import RPi.GPIO as GPIO
+except:
+    pass
+
+try:
+    import Adafruit_BBIO as GPIO
+except:
+    pass
 
 class AD9850:
 
