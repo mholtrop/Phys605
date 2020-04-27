@@ -95,9 +95,9 @@ class MCP320x:
         #            - bit6   : D0 low bit of channel select.
         #            - bit5-0 : Don't care.
         if self.Single_ended_mode:
-            self._control0=[0b00000100,0b00100000,0]  # Pre-compute part of the control word.
-        else:
             self._control0=[0b00000110,0b00100000,0]  # Pre-compute part of the control word.
+        else:
+            self._control0=[0b00000100,0b00100000,0]  # Pre-compute part of the control word.
 
         if self.MOSI > 0:  # Bing Bang mode
             assert self.MISO !=0 and self.CLK < 32
@@ -181,7 +181,9 @@ class MCP320x:
             # This builds up the control word, which selects the channel
             # and sets single/differential more.
             control=[ self._control0[0] + ((channel&0b100)>>2) , self._control0[1]+((channel&0b011)<<6),0]
+            print("SPIdec.control:",control)
             dat = self._dev.xfer(control)
+            print("SPIdec.dat:",dat)
             value= (dat[1]<<8)+dat[2] # Unpack the two 8-bit words to a single integer.
             return(value)
 
@@ -198,16 +200,23 @@ class MCP320x:
             GPIO.output(self.CLK,0)                # Make sure clock starts low.
             GPIO.output(self.MOSI,0)
             GPIO.output(self.CS_bar,0)             # Select the chip.
+            test = 1
             self.SendBit(1)                        # Start bit = 1
+            test = (test<<1)
+            test += self.Single_ended_mode
             self.SendBit(self.Single_ended_mode)   # Select single or differential
+            test = (test<<4)
+            test += (channel & 0b0111)
             if self.Channel_max > 2:
                 self.SendBit(int( (channel & 0b100)>0) ) # Send high bit of channel = DS2
                 self.SendBit(int( (channel & 0b010)>0) ) # Send mid  bit of channel = DS1
                 self.SendBit(int( (channel & 0b001)>0) ) # Send low  bit of channel = DS0
             else:
                 self.SendBit(channel)
-            self.SendBit(1)                       # MSB First (for MCP3x02) or don't care.
-
+            test = (test<<1)
+            test += 0
+            self.SendBit(0)                       # MSB First (for MCP3x02) or don't care.
+            print("ADC test = ",test)
             # The clock is currently low, and the dummy bit = 0 is on the ouput of the ADC
             #
             dummy = self.ReadBit() # Read the bit.
@@ -236,12 +245,17 @@ def main(argv):
     '''Test code for the MCP320x driver. This assumes you are using a MCP3208
     If no arguments are supplied, then use SPIdev for CE0 and read channel 0'''
 
-    if len(argv) < 2:
+    if len(argv) < 3:
+        print("Args : ",argv)
         cs_bar=0
         clk_pin=1000000
         mosi_pin=0
         miso_pin=0
-        channel =0
+        if len(argv)<2:
+            channel = 0
+        else:
+            channel =int(argv[1])
+            
     elif len(argv) < 6:
         print("Please supply: cs_bar_pin clk_pin mosi_pin miso_pin channel")
         sys.exit(1)
