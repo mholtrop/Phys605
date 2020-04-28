@@ -181,9 +181,7 @@ class MCP320x:
             # This builds up the control word, which selects the channel
             # and sets single/differential more.
             control=[ self._control0[0] + ((channel&0b100)>>2) , self._control0[1]+((channel&0b011)<<6),0]
-            print("SPIdec.control:",control)
             dat = self._dev.xfer(control)
-            print("SPIdec.dat:",dat)
             value= (dat[1]<<8)+dat[2] # Unpack the two 8-bit words to a single integer.
             return(value)
 
@@ -202,21 +200,14 @@ class MCP320x:
             GPIO.output(self.CS_bar,0)             # Select the chip.
             test = 1
             self.SendBit(1)                        # Start bit = 1
-            test = (test<<1)
-            test += self.Single_ended_mode
             self.SendBit(self.Single_ended_mode)   # Select single or differential
-            test = (test<<4)
-            test += (channel & 0b0111)
             if self.Channel_max > 2:
                 self.SendBit(int( (channel & 0b100)>0) ) # Send high bit of channel = DS2
                 self.SendBit(int( (channel & 0b010)>0) ) # Send mid  bit of channel = DS1
                 self.SendBit(int( (channel & 0b001)>0) ) # Send low  bit of channel = DS0
             else:
                 self.SendBit(channel)
-            test = (test<<1)
-            test += 0
             self.SendBit(0)                       # MSB First (for MCP3x02) or don't care.
-            print("ADC test = ",test)
             # The clock is currently low, and the dummy bit = 0 is on the ouput of the ADC
             #
             dummy = self.ReadBit() # Read the bit.
