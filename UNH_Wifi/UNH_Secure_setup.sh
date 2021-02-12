@@ -18,47 +18,31 @@ fix_the_wpa_supplicant_bug(){
 
 get_certificates(){
     # Passwordless certificates stored on GitHub
-    
+    wget https://raw.githubusercontent.com/mholtrop/Phys605/master/UNH_Wifi/mholtrop.cer
+    wget https://raw.githubusercontent.com/mholtrop/Phys605/master/UNH_Wifi/private.key
+    wget https://raw.githubusercontent.com/mholtrop/Phys605/master/UNH_Wifi/CA-27AC9369FAF25207BB2627CEFACCBE4EF9C319B8.cer
+    wget https://raw.githubusercontent.com/mholtrop/Phys605/master/UNH_Wifi/CA-47BEABC922EAE80E78783462A79F45C254FDE68B.cer
 }
 
-get_info() {
-    echo "Please enter your UNH username (without any @wildcat or @cisunix)"
-    echo "and also enter the corresponding password. The same you used to"
-    echo "log in on the webpage before."
-
-    read -p "UNH Username: " user
-    echo
-    while true; do
-	read -s -p "UNH Password (the text will not show up): " passw
-	echo
-	read -s -p "Type your password again to verify: " passwTest
-	echo
-	
-	if [ $passw != $passwTest ]; then
-	    echo "Passwords do not match, try again..."
-	    echo
-	else
-	    break
-	fi
-    done
+replace_wpa_supplicant_conf(){
+    # Add the proper entry to the wpa_supplicant.conf file.
+    cp /etc/wpa_supplicant/wpa_supplicant.conf ~/Downloads/wpa_supplicant.conf_orig
+    wget https://raw.githubusercontent.com/mholtrop/Phys605/master/UNH_Wifi/wpa_supplicant.conf
+    sudo cp wpa_supplicant.conf /etc/wpa_supplicant/wpa_supplicant.conf 
 }
 
-change_passw_certs(){
-    if [ -r ${user}@cpuserunhedu.cer ]; then
-	cp ${user}@cpuserunhedu.cer cpuserunhedu.cer
-    else 
-	echo "ERROR - Could not find the certificate. Did you use the correct username?"
-	exit
-    fi
-    if [ -r ${user}@cpuserunhedu.key ]; then
-	openssl rsa -des3 -in ${user}@cpuserunhedu.key -out cpuserunhedu.key -passin pass:${passw} -pasout pass:fizzix=phun
-    else
-	echo "ERROR - Could not find the certificate. Did you use the correct username?"
-	exit
-    fi
+get_new_networkname(){
+    # Ask for the number on the RPi.
+    read -p "Please enter the number on your RPi: "  pi_num
+    newname=phys605pi${pi_num}
+    sudo hostname ${newname}
+    sudo echo ${newname} > /etc/hostname
+}
 
-    sudo cp cpuserunhedu.* /etc/ssl/certs
-    sudo cp CA-*.cer /etc/ssl/certs
+restart_network(){
+    # Restart the wireless network
+    sudo killall wpa_supplicant
+    sudo systemctl restart dhcpcd
 }
 
 main() {
@@ -72,15 +56,13 @@ main() {
 	cd ~/Downloads 
 	echo "UNH Wifi setup started " >> UNH_Wifi.log
 	date >> UNH_Wifi.log
-	guide_to_get_certificates
+	get_certificates
 	fix_the_wpa_supplicant_bug
-	get_info
-	change_passw_certs
-	
-
-	popd
+	edit_wpa_supplicant_conf
+	restart_network
 	echo
-	echo "IMPORTANT: Restart your system, then try to connect to UNH-Secure via the wifi menu. Good luck."
+	echo "Your system should get networking now. "
+	echo "Your network address will be ${systemname}.aw4.unh.edu "
 }
 
 main
