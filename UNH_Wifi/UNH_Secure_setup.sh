@@ -18,16 +18,16 @@ fix_the_wpa_supplicant_bug(){
 
 get_certificates(){
     # Passwordless certificates stored on GitHub
-    wget https://raw.githubusercontent.com/mholtrop/Phys605/master/UNH_Wifi/mholtrop.cer
-    wget https://raw.githubusercontent.com/mholtrop/Phys605/master/UNH_Wifi/private.key
-    wget https://raw.githubusercontent.com/mholtrop/Phys605/master/UNH_Wifi/CA-27AC9369FAF25207BB2627CEFACCBE4EF9C319B8.cer
-    wget https://raw.githubusercontent.com/mholtrop/Phys605/master/UNH_Wifi/CA-47BEABC922EAE80E78783462A79F45C254FDE68B.cer
+    wget -q https://raw.githubusercontent.com/mholtrop/Phys605/master/UNH_Wifi/mholtrop.cer
+    wget -q https://raw.githubusercontent.com/mholtrop/Phys605/master/UNH_Wifi/private.key
+    wget -q https://raw.githubusercontent.com/mholtrop/Phys605/master/UNH_Wifi/CA-27AC9369FAF25207BB2627CEFACCBE4EF9C319B8.cer
+    wget -q https://raw.githubusercontent.com/mholtrop/Phys605/master/UNH_Wifi/CA-47BEABC922EAE80E78783462A79F45C254FDE68B.cer
 }
 
 replace_wpa_supplicant_conf(){
     # Add the proper entry to the wpa_supplicant.conf file.
     cp /etc/wpa_supplicant/wpa_supplicant.conf ~/Downloads/wpa_supplicant.conf_orig
-    wget https://raw.githubusercontent.com/mholtrop/Phys605/master/UNH_Wifi/wpa_supplicant.conf
+    wget -q https://raw.githubusercontent.com/mholtrop/Phys605/master/UNH_Wifi/wpa_supplicant.conf
     sudo cp wpa_supplicant.conf /etc/wpa_supplicant/wpa_supplicant.conf 
 }
 
@@ -58,7 +58,7 @@ main() {
 	date >> UNH_Wifi.log
 	get_certificates
 	fix_the_wpa_supplicant_bug
-	edit_wpa_supplicant_conf
+	replace_wpa_supplicant_conf
 	restart_network
 	echo
 	echo "Your system should get networking now. "
