@@ -1,6 +1,6 @@
 #!/bin/bash
 # Simple script to help getting you onto the UNH secure network.
-# Run as: "sudo UNH_Secure_setup.sh"
+# Run as: "./UNH_Secure_setup.sh"
 #
 # Written by Prof. Maurik Holtrop, Feb 2021
 #
@@ -22,6 +22,7 @@ get_certificates(){
     wget -q https://raw.githubusercontent.com/mholtrop/Phys605/master/UNH_Wifi/private.key
     wget -q https://raw.githubusercontent.com/mholtrop/Phys605/master/UNH_Wifi/CA-27AC9369FAF25207BB2627CEFACCBE4EF9C319B8.cer
     wget -q https://raw.githubusercontent.com/mholtrop/Phys605/master/UNH_Wifi/CA-47BEABC922EAE80E78783462A79F45C254FDE68B.cer
+    sudo cp mholtrop.cer private.key CA-27AC9369FAF25207BB2627CEFACCBE4EF9C319B8.cer CA-47BEABC922EAE80E78783462A79F45C254FDE68B.cer /etc/ssl/certs/
 }
 
 replace_wpa_supplicant_conf(){
