@@ -36,7 +36,8 @@ get_new_networkname(){
     read -p "Please enter the number on your RPi: "  pi_num
     newname=phys605pi${pi_num}
     sudo hostname ${newname}
-    sudo echo ${newname} > /etc/hostname
+    sudo echo ${newname} > new_hostname
+    sudo cp new_hostname /etc/hostname
 }
 
 restart_network(){
@@ -64,7 +65,7 @@ main() {
 	restart_network
 	echo
 	echo "Your system should get networking now. "
-	echo "Your network address will be ${systemname}.aw4.unh.edu "
+	echo "Your network address will be ${newname}.aw4.unh.edu "
 }
 
 main
