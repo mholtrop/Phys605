@@ -43,22 +43,24 @@ restart_network(){
     # Restart the wireless network
     sudo killall wpa_supplicant
     sudo systemctl restart dhcpcd
+    read -p "Please type type <enter> key to continue"
 }
 
 main() {
-	intro
-	echo "======================================"
+	echo "=============================================================================="
 	echo "This script will attempt to automatically setup wifi connection to UNH Secure"
 	echo "on your Raspberry Pi. "
-	echo "You will need your UNH username and password"
-	echo "(same as you use for logging into Canvas)"
-	echo "You will *also* need the password for the 'pi' account in this system."
+	echo "You will need the password for the 'pi' account in this system."
+	echo "(or the password for the account you logged in with.)"
+	echo "You can ignore the 'sudo: unable to resolve ...' mesages."
+	echo "=============================================================================="
 	cd ~/Downloads 
 	echo "UNH Wifi setup started " >> UNH_Wifi.log
 	date >> UNH_Wifi.log
 	get_certificates
 	fix_the_wpa_supplicant_bug
 	replace_wpa_supplicant_conf
+	get_new_networkname
 	restart_network
 	echo
 	echo "Your system should get networking now. "
