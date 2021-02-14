@@ -70,102 +70,69 @@ import time
 import smbus
 import ctypes
 
+from MyValues import MyValues
+
+
 class ADS1115(object):
     """ADS1115 16-bit ADC
     Parameters: bus (default=1), addr (default = 0x48)"""
 
     # Maping of gain values to config register values.
     ADS1115_CONFIG_FULLSCALE = {
-        6.144:   0b000<<9,
-        4.096:   0b001<<9,
-        2.048:   0b010<<9,
-        1.024:   0b011<<9,
-        0.512:   0b100<<9,
-        0.256 :  0b101<<9
+        6.144:   0b000 << 9,
+        4.096:   0b001 << 9,
+        2.048:   0b010 << 9,
+        1.024:   0b011 << 9,
+        0.512:   0b100 << 9,
+        0.256:  0b101 << 9
     }
     ADS1115_CONFIG_FULLSCALE_REV = {v: k for k, v in ADS1115_CONFIG_FULLSCALE.items()}
     # Mapping of data/sample rate to config register values for ADS1015 (faster).
     # Mapping of data/sample rate to config register values for ADS1115 (slower).
     ADS1115_CONFIG_DATARATE = {
-        8:    0b000<<5,
-        16:   0b001<<5,
-        32:   0b010<<5,
-        64:   0b011<<5,
-        128:  0b100<<5,
-        250:  0b101<<5,
-        475:  0b110<<5,
-        860:  0b111<<5
+        8:    0b000 << 5,
+        16:   0b001 << 5,
+        32:   0b010 << 5,
+        64:   0b011 << 5,
+        128:  0b100 << 5,
+        250:  0b101 << 5,
+        475:  0b110 << 5,
+        860:  0b111 << 5
     }
     ADS1115_CONFIG_DATARATE_REV = {v: k for k, v in ADS1115_CONFIG_DATARATE.items()}
-
-    class my_values:
-        """Class for getting the value of the chip, which mimics a list."""
-        def __init__(self,getter,MAX):
-            self._getter = getter
-            self._MAX = MAX
-            self._n = 0
-
-        def __getitem__(self,idx):
-            return(self._getter(idx))
-
-        def __setitem__(self,idx,val):
-            raise ValueError("The ADC values cannot be written to, only read.")
-
-        def __len__(self):
-            return(self._MAX)
-
-        def __iter__(self):
-            self._n=0
-            return(self)
-
-        def __next__(self):
-            if self._n < len(self):
-                result = self[self._n]
-                self._n += 1
-                return(result)
-            else:
-                raise StopIteration
-
-        def __repr__(self):
-            return(str(self))
-
-        def __str__(self):
-            tmplist = [ x for x in self ]
-            return(str(tmplist))
 
     def __init__(self, bus=1, address=0x48):
         try:
             self._bus = smbus.SMBus(bus)
         except IOError:
             print("Error opening SMBus {}. Please make sure the Raspberry Pi is setup to read this bus.".format(bus))
-            return(None)
 
-        self._address=address            # Set by the hardware = 0b1101000
+        self._address = address            # Set by the hardware = 0b1101000
         self._MAX_channel = 4
         self._conversion_mode = self.read_mode()      # The conversion mode. Stored for convenience
         self._data_rate = self.read_rate()            # The conversion rate. Stored for convenience
         self._FSR = self.read_fullscale()             # The full scale. Stored for convenience.
-        self._input,self._differential = self.read_input() # Input channel and differentual mode ,,
+        self._input = 0
+        self._differential = self.read_input()        # Input channel and differential mode
 
-        self._values = self.my_values(self.read_adc,self._MAX_channel)
-        self._volts  = self.my_values(self.read_volts,self._MAX_channel)
+        self._values = MyValues(self.read_adc, self._MAX_channel)
+        self._volts = MyValues(self.read_volts, self._MAX_channel)
 
     def _read_adc(self):
         """ Read and return the conversion register."""
-        val=self._bus.read_i2c_block_data(self._address,0x00,2) # Read 2 bytes from i2c
-        res = (val[0]<<8) + val[1]
+        val = self._bus.read_i2c_block_data(self._address, 0x00, 2)  # Read 2 bytes from i2c
+        res = (val[0] << 8) + val[1]
         if val[0] & 0x80:     # The ADC returns a signed, ones complement, number.
-            res -= 0xFFFF -1  # This is the equivalent of fixing up the ones complement.
-
-        return(res)
+            res -= 0xFFFF - 1  # This is the equivalent of fixing up the ones complement.
+        return res
 
     def _read_control(self):
         """ Read and return the control register."""
-        val=self._bus.read_i2c_block_data(self._address,0x01,2) # Read 2 bytes from i2c
-        res = (val[0]<<8) + val[1]
-        return(res)
+        val = self._bus.read_i2c_block_data(self._address, 0x01, 2)  # Read 2 bytes from i2c
+        res = (val[0] << 8) + val[1]
+        return res
 
-    def _set_control(self,control):
+    def _set_control(self, control):
         """ Set the control register on the chip.
 
         Parameters:
@@ -173,10 +140,10 @@ class ADS1115(object):
         control: int (16-bits)
             The 16 bits to set the control register to.
         """
-        val = [((control>>8) & 0xFF),(control & 0xFF)]
-        self._bus.write_i2c_block_data(self._address,0x01,val)
+        val = [((control >> 8) & 0xFF), (control & 0xFF)]
+        self._bus.write_i2c_block_data(self._address, 0x01, val)
 
-    def _set_control_bits(self,bit_value,bit_mask):
+    def _set_control_bits(self, bit_value, bit_mask):
         """ Set specific bits in the control register. The mask, is a set of 1 Bits
         that are to be manipulated, and the bit_value is the new value.
         Example: Set bits 11:9 to "101": _set_control_bits(0b101<<9,0b111<<9)
@@ -189,11 +156,11 @@ class ADS1115(object):
                 Mask of the bits to be set.
         """
         control = self._read_control()
-        control &= ( bit_mask ^ 0xFFFF )  # Invert the bit_mask, then and to control, clearing bits.
+        control &= (bit_mask ^ 0xFFFF)  # Invert the bit_mask, then and to control, clearing bits.
         control |= bit_value              # Set the appropriate bits.
         self._set_control(control)        # Write back to register.
 
-    def set_mode(self,mode=1):
+    def set_mode(self, mode=1):
         """Set the read mode for the conversions.
 
         Parameters:
@@ -201,23 +168,23 @@ class ADS1115(object):
          mode: int
             Set the conversion mode: 1 use single-shot mode, 0 use continuous mode.
         """
-        assert mode==0 or mode==1
+        assert mode == 0 or mode == 1
         self._conversion_mode = mode
-        self._set_control_bits(mode<<8,0b01<<8)
+        self._set_control_bits(mode << 8, 0b01 << 8)
 
-    def read_mode(self,control=None):
+    def read_mode(self, control=None):
         """Read and return the conversion mode from the control register.
         Mode = 0 (False) is continuous mode.
         Mode = 1 (True)  is single shot mode."""
         if control is None:
             control = self._read_control()
-        return( (control& (0b01<<8))>0 )
+        return (control & (0b01 << 8)) > 0
 
     def get_mode(self):
         """Return the stored conversion mode. """
-        return(self._conversion_mode)
+        return self._conversion_mode
 
-    def set_rate(self,data_rate):
+    def set_rate(self, data_rate):
         """Set the reading rate for continuous conversion mode.
         Does not change the mode unless data_rate =0, which sets mode to 1 (single conversion)
 
@@ -228,28 +195,28 @@ class ADS1115(object):
             0, 8,16,32,64,128,250,475,860, with 0 forcing mode=1
         """
         if data_rate == 0:
-            self.set_read_mode(1)
+            self.set_mode(1)
             return
         else:
-            if not data_rate in self.ADS1115_CONFIG_DATARATE:
+            if data_rate not in self.ADS1115_CONFIG_DATARATE:
                 raise ValueError("The data rate must be 0 or one from the list {}".format(self.ADS1115_CONFIG_DATARATE))
         self._data_rate = data_rate
         rate_bits = self.ADS1115_CONFIG_DATARATE[data_rate]
-        self._set_control_bits(rate_bits,0b111<<5)
+        self._set_control_bits(rate_bits, 0b111 << 5)
 
-    def read_rate(self,control=None):
+    def read_rate(self, control=None):
         """Read and return the data rate from the control register."""
         if control is None:
             control = self._read_control()
-        rate_bits =  control & 0b111 << 5
+        rate_bits = control & 0b111 << 5
         self._data_rate = self.ADS1115_CONFIG_DATARATE_REV[rate_bits]
-        return(self._data_rate)
+        return self._data_rate
 
     def get_rate(self):
         """Return the stored data rate."""
-        return(self._data_rate)
+        return self._data_rate
 
-    def set_input(self,channel,differential=0):
+    def set_input(self, channel, differential=0):
         """Select which of the 4 inputs to read.
         If differential = 1, then the difference is read according to the table:
         channel = 0  =>  AIN0 - AIN1
@@ -264,29 +231,29 @@ class ADS1115(object):
         differential: Boolean
             Whether to read differential (1 or True) or absolute (0 or False).
         """
-        assert 0<= channel < self._MAX_channel
+        assert 0 <= channel < self._MAX_channel
         self._input = channel
         self._differential = differential
         if not differential:
             channel += 0b100
-        self._set_control_bits(channel<<12,0b111<<12)
+        self._set_control_bits(channel << 12, 0b111 << 12)
 
-    def read_input(self,control=None):
+    def read_input(self, control=None):
         """Read and return the current input selection.
         Returns: (channel,differential)
         """
         if control is None:
             control = self._read_control()
-        mux = (control & (0b111<<12))>>12
-        self._input =mux&0b011
-        self._differential = not ((mux&0b100)>>2)
-        return (self._input,self._differential)
+        mux = (control & (0b111 << 12)) >> 12
+        self._input = mux & 0b011
+        self._differential = not ((mux & 0b100) >> 2)
+        return self._input, self._differential
 
     def get_input(self):
         """Return the stored input channel and differential setting."""
-        return (self._input,self._differential)
+        return self._input, self._differential
 
-    def set_fullscale(self,full_scale):
+    def set_fullscale(self, full_scale):
         """Select the full scale (FSR) for the programmable gain amplifier.
 
         Parameters:
@@ -297,84 +264,86 @@ class ADS1115(object):
             Note that you cannot input more than Vdd on an input irrespective of the
             full_scale setting.
         """
-        if not full_scale in self.ADS1115_CONFIG_FULLSCALE:
+        if full_scale not in self.ADS1115_CONFIG_FULLSCALE:
             raise ValueError("full_scale must be one of {}".format(self.ADS1115_CONFIG_FULLSCALE))
 
         self._FSR = full_scale
         pga = self.ADS1115_CONFIG_FULLSCALE[full_scale]
-        self._set_control_bits(pga,0b111<<9)
+        self._set_control_bits(pga, 0b111 << 9)
 
-    def read_fullscale(self,control=None):
+    def read_fullscale(self, control=None):
         """Read the full scale setting from the control register."""
         if control is None:
             control = self._read_control()
-        pga = control & (0b111<<9)
-        self._FSR =self.ADS1115_CONFIG_FULLSCALE_REV[pga]
-        return(self._FSR)
+        pga = control & (0b111 << 9)
+        self._FSR = self.ADS1115_CONFIG_FULLSCALE_REV[pga]
+        return self._FSR
 
     def get_fullscale(self):
         """Return the stored fullscale setting"""
-        return(self._FSR)
+        return self._FSR
 
-    def read_adc(self,input=None):
+    def read_adc(self, inchan=None):
         """Read the ADC for given input, without changing other settings in the control register.
-        If input=None, read the current input.
+        If inchan=None, read the current input.
         Returns the raw ADC value as a 16-bit integer.
         If conversion mode is 1 (single shot) then trigger a conversion, and wait for it
         to complete, then return the conversion value.
         If conversion mode is 0 (continuous) then read the adc directly, returning the
         last read value."""
 
-        if input is not None and input != self.get_input()[0]:
-            self.set_input(input)
+        if inchan is not None and inchan != self.get_input()[0]:
+            self.set_input(inchan)
 
         if self._conversion_mode == 1:   # Single shot mode.
             # We need to write a 1 to bit 15 of the control register.
             # to start the conversion.
             control = self._read_control()
-            control |= 0b01<<15         # Set Bit 15, going out of low power mode.
+            control |= 0b01 << 15         # Set Bit 15, going out of low power mode.
             self._set_control(control)  # Start conversion.
             time.sleep(1/self._data_rate + 0.0001)
             conv_done = False
             while not conv_done:
                 control = self._read_control()
-                conv_done = ((control & 0x8000)>0)   # Check bit 15
+                conv_done = ((control & 0x8000) > 0)   # Check bit 15
             adc_raw = self._read_adc()
-            return(adc_raw)
+            return adc_raw
         else:
-            return(self._read_adc())
+            return self._read_adc()
 
-    def read_volts(self,input=None):
+    def read_volts(self, inchan=None):
         """Read the ADC for given input and convert the number to volts according to the
         setting of the full scale. """
-
-        return( self.get_fullscale()*self.read_adc(input)/0x7FFF )
+        return self.get_fullscale() * self.read_adc(inchan) / 0x7FFF
 
     def __str__(self):
         """Return a string with a description of the current status. """
-        out = "ADS115: full scale = {:6.5f}  data rate = {:3d}  input = {:1d}".format(self.get_fullscale(),self.get_rate(),self.get_input()[0])
-        out +="diff={:1d} value = 0x{:04x} volts={:7.6f}".format(self.get_input()[1],self.read_adc(),self.read_volts())
-        return(out)
+        out = "ADS115: full scale = {:6.5f}  data rate = {:3d}  input = {:1d}".format(self.get_fullscale(),
+                                                                                      self.get_rate(),
+                                                                                      self.get_input()[0])
+        out += "diff={:1d} value = 0x{:04x} volts={:7.6f}".format(self.get_input()[1], self.read_adc(),
+                                                                  self.read_volts())
+        return out
 
     @property
     def values(self):
         """ADC values presented as a list."""
-        return( self._values )
+        return self._values
 
     @property
     def volts(self):
         """ADC voltages presented as a list"""
-        return( self._volts )
+        return self._volts
 
     @property
     def accuracy(self):
         """The fractional voltage of the least significant bit. """
-        return(self.get_fullscale()/float(0x7FFF))
+        return self.get_fullscale() / float(0x7FFF)
 
     @property
     def input(self):
         """The current input channel """
-        return(self._input)
+        return self._input
 
     @input.setter
     def input(self, inp):
@@ -384,19 +353,19 @@ class ADS1115(object):
     @property
     def rate(self):
         """The data conversion rate in samples per seconds. See set_rate()."""
-        return(self._data_rate)
+        return self._data_rate
 
     @rate.setter
-    def rate(self,rate):
+    def rate(self, rate):
         """Set the data conversion rate in sample per seconds.See set_rate()."""
         self.set_rate(rate)
 
     @property
     def fullscale(self):
         """The fullscale of the data conversion. See set_fullscale()."""
-        return(self._FSR)
+        return self._FSR
 
     @fullscale.setter
-    def fullscale(self,fsr):
+    def fullscale(self, fsr):
         """Set the fillscale of the data conversion, see set_fullscale()."""
         self.set_fullscale(fsr)
