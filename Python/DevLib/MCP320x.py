@@ -220,7 +220,9 @@ class MCP320x:
             # This builds up the control word, which selects the channel
             # and sets single/differential more.
             control=[ self._control0[0] + ((channel&0b100)>>2) , self._control0[1]+((channel&0b011)<<6),0]
+            print("SPIdec.control:",control)
             dat = self._dev.xfer(control)
+            print("SPIdec.dat:",dat)
             value= (dat[1]<<8)+dat[2] # Unpack the two 8-bit words to a single integer.
             return(value)
 
@@ -245,8 +247,9 @@ class MCP320x:
                 self.SendBit(int( (channel & 0b001)>0) ) # Send low  bit of channel = DS0
             else:
                 self.SendBit(channel)
-            self.SendBit(1)                       # MSB First (for MCP3x02) or don't care.
 
+            self.SendBit(0)                       # MSB First (for MCP3x02) or don't care.
+            print("ADC test = ",test)
             # The clock is currently low, and the dummy bit = 0 is on the ouput of the ADC
             #
             dummy = self.ReadBit() # Read the bit.
@@ -306,12 +309,17 @@ def main(argv):
     '''Test code for the MCP320x driver. This assumes you are using a MCP3208
     If no arguments are supplied, then use SPIdev for CE0 and read channel 0'''
 
-    if len(argv) < 2:
+    if len(argv) < 3:
+        print("Args : ",argv)
         cs_bar=0
         clk_pin=1000000
         mosi_pin=0
         miso_pin=0
-        channel =0
+        if len(argv)<2:
+            channel = 0
+        else:
+            channel =int(argv[1])
+            
     elif len(argv) < 6:
         print("Please supply: cs_bar_pin clk_pin mosi_pin miso_pin channel")
         sys.exit(1)
