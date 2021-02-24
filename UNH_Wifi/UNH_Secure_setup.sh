@@ -25,11 +25,11 @@ get_certificates(){
     sudo cp mholtrop.cer private.key CA-27AC9369FAF25207BB2627CEFACCBE4EF9C319B8.cer CA-47BEABC922EAE80E78783462A79F45C254FDE68B.cer /etc/ssl/certs/
 }
 
-replace_wpa_supplicant_conf(){
+add_to_wpa_supplicant_conf(){
     # Add the proper entry to the wpa_supplicant.conf file.
-    cp /etc/wpa_supplicant/wpa_supplicant.conf ~/Downloads/wpa_supplicant.conf_orig
+    sudo cp /etc/wpa_supplicant/wpa_supplicant.conf ~/Downloads/wpa_supplicant.conf_orig
     wget -q https://raw.githubusercontent.com/mholtrop/Phys605/master/UNH_Wifi/wpa_supplicant.conf
-    sudo cp wpa_supplicant.conf /etc/wpa_supplicant/wpa_supplicant.conf 
+    sudo bash -c 'cat wpa_supplicant.conf >> /etc/wpa_supplicant/wpa_supplicant.conf'
 }
 
 get_new_networkname(){
@@ -61,7 +61,7 @@ main() {
 	date >> UNH_Wifi.log
 	get_certificates
 	fix_the_wpa_supplicant_bug
-	replace_wpa_supplicant_conf
+	add_to_wpa_supplicant_conf
 	get_new_networkname
 	restart_network
 	echo
