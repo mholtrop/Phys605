@@ -52,8 +52,8 @@ Max_cs_bar = 6
 # Max_clock= 1000000  # Use clock frequency for SPI connection, otherwise use GPIO pin connected to CLK
 # Max_cs_bar = 0      # Use channel (CE0 or CE1) for SPI connection, otherwise use GPIO pin for CS
 
-S = SN74HC165()  # Placeholder, make sure you run Setup() before using.
-M = MAX7219()
+S = None  # Placeholder, make sure you run Setup() before using.
+M = None
 
 
 def setup():
@@ -104,7 +104,7 @@ def main():
             time.sleep(1.9989611300233423)  # Sleep for not quite 1 second while the counter counts.
             GPIO.output(Counter_Gate, 0)    # Stop the counter.
             count = load_and_shift()        # Load the data from the shifter.
-            M.WriteInt(count)               # Write it to the display.
+            M.write_int(count)               # Write it to the display.
             print("{:04d}, {:6d}".format(itt, count))  # Print the iteration and the counts.
             sys.stdout.flush()
             time.sleep(1.)                 # Wait a sec before starting again.

@@ -54,8 +54,8 @@ Max_cs_bar = 6
 # Max_clock= 1000000  # Use clock frequency for SPI connection, otherwise use GPIO pin connected to CLK
 # Max_cs_bar = 0      # Use channel (CE0 or CE1) for SPI connection, otherwise use GPIO pin for CS
 
-S = SN74HC165()  # Placeholder, make sure you run Setup() before using.
-M = MAX7219()
+S = None  # Placeholder, make sure you run Setup() before using.
+M = None
 
 
 def setup():
@@ -66,7 +66,7 @@ def setup():
     GPIO.setmode(GPIO.BCM)  # Set the numbering scheme to correspond to numbers on Pi Wedge.
 
     S = SN74HC165(Serial_In, Serial_CLK, Serial_Load, Serial_N)  # Initialize serial shifter.
-    M = MAX7219(Max_data, Max_clock, Max_cs_bar) # Initialize the display.
+    M = MAX7219(Max_data, Max_clock, Max_cs_bar)  # Initialize the display.
     M.set_brightness(2)
 
     GPIO.setup(Counter_Clear, GPIO.OUT)
@@ -88,8 +88,8 @@ def cleanup():
 
 def load_and_shift():
     """ Load a number into the shifters and then read it out."""
-    S.Load_Shifter()
-    return S.Read_Data()
+    S.load_shifter()
+    return S.read_data()
 
 
 def main():
@@ -131,7 +131,7 @@ def main():
                 freq_now_ssq += freq_now*freq_now
                 freq_now_ave = freq_now_sum/itt
                 freq_now_sigma = math.sqrt(freq_now_ssq/itt - freq_now_ave*freq_now_ave)
-                M.WriteFloat(freq)
+                M.write_float(freq)
                 print("{:14d} ({:9d}), {:12.4f} ({:4.3f}), {:16.8f}, {:16.8f}, {:16.8f}+/-{:12.8f} "
                       .format(count, diff_count, dt, diff_time, freq, freq_now, freq_now_ave, freq_now_sigma))
                 # Print the itteration and the counts.
