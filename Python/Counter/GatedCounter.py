@@ -26,8 +26,11 @@
 #       to the clock to be counted.
 #
 #
-import RPi.GPIO as GPIO
-from DevLib import SN74HC165,MAX7219
+try:
+    import RPi.GPIO as GPIO
+    from DevLib import SN74HC165, MAX7219
+except ImportError:
+    pass
 import time
 import sys
 
@@ -35,13 +38,13 @@ Counter_Clear = 17
 Counter_Gate = 16
 
 
-Serial_In  = 18   # GPIO pin for the SER pin of the shifter
+Serial_In = 18   # GPIO pin for the SER pin of the shifter
 Serial_CLK = 19   # GPIO pin for the CLK pin of the shifter
-Serial_Load= 20   # GPIO pin for the SH/LD-bar pin of the shifter
-Serial_N   = 24   # Number of bits to shift in. 8 bits for every SN74HC165
+Serial_Load = 20   # GPIO pin for the SH/LD-bar pin of the shifter
+Serial_N = 24   # Number of bits to shift in. 8 bits for every SN74HC165
 
-Max_data   = 4
-Max_clock  = 5
+Max_data = 4
+Max_clock = 5
 Max_cs_bar = 6
 
 # If you connect your display to the PSI interface, comment the lines above and uncomment the lines below.
@@ -49,59 +52,60 @@ Max_cs_bar = 6
 # Max_clock= 1000000  # Use clock frequency for SPI connection, otherwise use GPIO pin connected to CLK
 # Max_cs_bar = 0      # Use channel (CE0 or CE1) for SPI connection, otherwise use GPIO pin for CS
 
-S = None  # Placeholder, make sure you run Setup() before using.
-M = None
+S = SN74HC165()  # Placeholder, make sure you run Setup() before using.
+M = MAX7219()
 
 
-def Setup():
-    '''Set the RPi to read the shifters and communucate with the MAX7219 '''
+def setup():
+    """Set the RPi to read the shifters and communucate with the MAX7219 """
     global S
     global M
 
     GPIO.setmode(GPIO.BCM)  # Set the numbering scheme to correspond to numbers on Pi Wedge.
 
-    S = SN74HC165(Serial_In,Serial_CLK,Serial_Load,Serial_N) # Initialize serial shifter.
-    M = MAX7219(Max_data,Max_clock,Max_cs_bar)               # Initialize the display.
+    S = SN74HC165(Serial_In, Serial_CLK, Serial_Load, Serial_N)  # Initialize serial shifter.
+    M = MAX7219(Max_data, Max_clock, Max_cs_bar)                 # Initialize the display.
 
-    GPIO.setup(Counter_Clear,GPIO.OUT)                       # Set the Clear and Gate to output.
-    GPIO.setup(Counter_Gate,GPIO.OUT)
-    GPIO.output(Counter_Gate,0)
-    ClearCounter()
+    GPIO.setup(Counter_Clear, GPIO.OUT)                          # Set the Clear and Gate to output.
+    GPIO.setup(Counter_Gate, GPIO.OUT)
+    GPIO.output(Counter_Gate, 0)
+    clear_counter()
 
-def ClearCounter():
-    '''Clear the counter by pulsing the Counter_Clear pin high'''
-    GPIO.output(Counter_Clear,1)
-    GPIO.output(Counter_Clear,0)
 
-def Cleanup():
-    '''Cleanup after this code by releasing the allocated GPIO pins.'''
+def clear_counter():
+    """Clear the counter by pulsing the Counter_Clear pin high"""
+    GPIO.output(Counter_Clear, 1)
+    GPIO.output(Counter_Clear, 0)
+
+
+def cleanup():
+    """Cleanup after this code by releasing the allocated GPIO pins."""
     GPIO.cleanup(Counter_Clear)                            # Only release the pins actually allocated.
     GPIO.cleanup(Counter_Gate)
 
-def LoadAndShift():
-    ''' Load a number into the shifters and then read it out.'''
-    S.Load_Shifter()              # Load shifters
-    return(S.Read_Data())         # Read the shifters and return the value.
 
-def Main():
-    ''' Run a basic counter code. '''
-    Setup()                      # Setup GPIO pins and create Shifter and Display handles.
-    print "counting."
-    sys.stdout.flush()           # Calling this causes the print statement to be displayed immediately rather than being buffered.
-    itt=0
+def load_and_shift():
+    """ Load a number into the shifters and then read it out."""
+    S.load_shifter()              # Load shifters
+    return S.read_data()         # Read the shifters and return the value.
+
+
+def main():
+    """ Run a basic counter code. """
+    setup()             # Setup GPIO pins and create Shifter and Display handles.
+    print("counting.")
+    sys.stdout.flush()  # Calling this causes the print statement to be displayed immediately.
+    itt = 0
     try:
         while True:
-            itt+=1
-            ClearCounter()                 # Clear the counter
-            GPIO.output(Counter_Gate,1)    # Start the counter by opening the gate.
-            # x = 0                        # Do something we want to time.
-            # for j in range(1000):
-            #     x=x+j
-            time.sleep(1.9989611300233423) # Sleep for not quite 1 second while the counter counts.
-            GPIO.output(Counter_Gate,0)    # Stop the counter.
-            count = LoadAndShift()         # Load the data from the shifter.
-            M.WriteInt(count)              # Write it to the display.
-            print("{:04d}, {:6d}".format(itt,count)) # Print the itteration and the counts.
+            itt += 1
+            clear_counter()                 # Clear the counter
+            GPIO.output(Counter_Gate, 1)    # Start the counter by opening the gate.
+            time.sleep(1.9989611300233423)  # Sleep for not quite 1 second while the counter counts.
+            GPIO.output(Counter_Gate, 0)    # Stop the counter.
+            count = load_and_shift()        # Load the data from the shifter.
+            M.WriteInt(count)               # Write it to the display.
+            print("{:04d}, {:6d}".format(itt, count))  # Print the iteration and the counts.
             sys.stdout.flush()
             time.sleep(1.)                 # Wait a sec before starting again.
 
@@ -111,8 +115,9 @@ def Main():
         print("Error")
         print(e)
     finally:
-        Cleanup()
+        cleanup()
+
 
 if __name__ == "__main__":
-    Main()
+    main()
     sys.exit()
