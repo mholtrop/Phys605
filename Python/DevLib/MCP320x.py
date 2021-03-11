@@ -94,8 +94,8 @@ class MCP320x:
 
         self._SingleEnded = single_ended
         self._Vref = 3.3
-        self._values = MyValues(self.ReadADC, self._ChannelMax)
-        self._volts = MyValues(self.ReadVolts, self._ChannelMax)
+        self._values = MyValues(self.read_adc, self._ChannelMax)
+        self._volts = MyValues(self.read_volts, self._ChannelMax)
 
         # This is used to speed up the SPIDEV communication. Send out MSB first.
         # control[0] - bit7-3: upper 5 bits 0, because we can only send 8 bit sequences.
@@ -190,9 +190,7 @@ class MCP320x:
             # This builds up the control word, which selects the channel
             # and sets single/differential more.
             control = [self._control0[0] + ((channel & 0b100) >> 2), self._control0[1]+((channel & 0b011) << 6), 0]
-            # print("SPIdec.control:", control)
             dat = self._dev.xfer(control)
-            # print("SPIdec.dat:", dat)
             value = (dat[1] << 8)+dat[2]  # Unpack the two 8-bit words to a single integer.
             return value
 
@@ -200,7 +198,7 @@ class MCP320x:
             # Bit Bang code.
             # To read out this chip you need to send:
             # 1 - start bit
-            # 2 - Single ended (1) or differantial (0) mode
+            # 2 - Single ended (1) or differential (0) mode
             # 3 - Channel select: 1 bit for x=2 or 3 bits for x=4,8
             # 4 - MSB first (1) or LSB first (0)
             #
@@ -220,9 +218,9 @@ class MCP320x:
 
             self.send_bit(0)                       # MSB First (for MCP3x02) or don't care.
 
-            # The clock is currently low, and the dummy bit = 0 is on the ouput of the ADC
+            # The clock is currently low, and the dummy bit = 0 is on the output of the ADC
             #
-            dummy = self.read_bit()  # Read the bit.
+            self.read_bit()  # Read the bit.
 
             data = 0
             for i in range(self._BitLength):
@@ -238,7 +236,7 @@ class MCP320x:
 
     def read_volts(self, channel):
         """Read the ADC value from channel and convert to volts, assuming that Vref is set correctly. """
-        return self._Vref * self.ReadADC(channel) / self.get_value_max()
+        return self._Vref * self.read_adc(channel) / self.get_value_max()
 
     def fast_read_adc0(self):
         """This reads the actual ADC value of channel 0, with as little overhead as possible.
@@ -303,7 +301,7 @@ def main(argv):
     adc_chip = MCP320x(cs_bar, clk_pin, mosi_pin, miso_pin)
     try:
         while True:
-            value = adc_chip.ReadADC(channel)
+            value = adc_chip.read_adc(channel)
             print("{:4d}".format(value))
             time.sleep(0.1)
     except KeyboardInterrupt:

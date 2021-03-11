@@ -56,7 +56,7 @@
 # 110 : 475 SPS
 # 111 : 860 SPS
 #
-# There is a low-theshold and high-theshold register at address 0x02 and 0x03
+# There is a low-threshold and high-threshold register at address 0x02 and 0x03
 #
 # Note about I2C:
 # Althought there is an smbus.read_word_data() which reads 2 bytes, and a corresponding
@@ -67,8 +67,10 @@
 #   * Further reduce the number of reads of the control register.
 #
 import time
-import smbus
-import ctypes
+try:
+    import smbus
+except ImportError:
+    pass
 
 from MyValues import MyValues
 

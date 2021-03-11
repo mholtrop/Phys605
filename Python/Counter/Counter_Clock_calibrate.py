@@ -26,11 +26,12 @@
 #       to the clock to be counted.
 #
 #
-import RPi.GPIO as GPIO
-from DevLib import SN74HC165,MAX7219
+try:
+    import RPi.GPIO as GPIO
+    from DevLib import SN74HC165, MAX7219
+except ImportError:
+    pass
 import time
-import datetime
-from dateutil import parser as datparse
 import sys
 import math
 import csv
@@ -39,13 +40,13 @@ Counter_Clear = 17
 Counter_Gate = 16
 
 
-Serial_In  = 18   # GPIO pin for the SER pin of the shifter
+Serial_In = 18   # GPIO pin for the SER pin of the shifter
 Serial_CLK = 19   # GPIO pin for the CLK pin of the shifter
-Serial_Load= 20   # GPIO pin for the SH/LD-bar pin of the shifter
-Serial_N   = 32   # Number of bits to shift in. 8 bits for every SN74HC165
+Serial_Load = 20   # GPIO pin for the SH/LD-bar pin of the shifter
+Serial_N = 32   # Number of bits to shift in. 8 bits for every SN74HC165
 
-Max_data   = 4
-Max_clock  = 5
+Max_data = 4
+Max_clock = 5
 Max_cs_bar = 6
 
 # If you connect your display to the PSI interface, comment the lines above and uncomment the lines below.
@@ -57,79 +58,85 @@ S = None  # Placeholder, make sure you run Setup() before using.
 M = None
 
 
-def Setup():
-    '''Set the RPi to read the shifterers and communucate with the MAX7219 '''
+def setup():
+    """Set the RPi to read the shifterers and communucate with the MAX7219 """
     global S
     global M
 
     GPIO.setmode(GPIO.BCM)  # Set the numbering scheme to correspond to numbers on Pi Wedge.
 
-    S = SN74HC165(Serial_In,Serial_CLK,Serial_Load,Serial_N) # Initialize serial shifter.
-    M = MAX7219(Max_data,Max_clock,Max_cs_bar)               # Initialize the display.
-    M.SetBrightness(2)
+    S = SN74HC165(Serial_In, Serial_CLK, Serial_Load, Serial_N)  # Initialize serial shifter.
+    M = MAX7219(Max_data, Max_clock, Max_cs_bar)  # Initialize the display.
+    M.set_brightness(2)
 
-    GPIO.setup(Counter_Clear,GPIO.OUT)
-    GPIO.setup(Counter_Gate,GPIO.OUT)
-    GPIO.output(Counter_Gate,0)
-    ClearCounter()
+    GPIO.setup(Counter_Clear, GPIO.OUT)
+    GPIO.setup(Counter_Gate, GPIO.OUT)
+    GPIO.output(Counter_Gate, 0)
+    clear_counter()
 
-def ClearCounter():
-    '''Clear the counter by pulsing the Counter_Clear pin high'''
-    GPIO.output(Counter_Clear,1)
-    GPIO.output(Counter_Clear,0)
 
-def Cleanup():
+def clear_counter():
+    """Clear the counter by pulsing the Counter_Clear pin high"""
+    GPIO.output(Counter_Clear, 1)
+    GPIO.output(Counter_Clear, 0)
+
+
+def cleanup():
     GPIO.cleanup(Counter_Clear)
     GPIO.cleanup(Counter_Gate)
 
-def LoadAndShift():
-    ''' Load a number into the shifters and then read it out.'''
-    S.Load_Shifter()
-    return(S.Read_Data())
 
-def Main():
-    ''' Run a basic counter code. '''
-    Setup()
-    time_now=time.time()
+def load_and_shift():
+    """ Load a number into the shifters and then read it out."""
+    S.load_shifter()
+    return S.read_data()
+
+
+def main():
+    """ Run a basic counter code. """
+    setup()
+    time_now = time.time()
     print("Starting Calibration at {}".format(time.ctime(time_now)))
     sys.stdout.flush()
 
 # To store the data in a csv file.
-    fout=open("counter_dat.csv","w")
+    fout = open("counter_dat.csv", "w")
     wr = csv.writer(fout)
-    df_cols=["idx","count","dtime","freq","freq_now","freq_now_ave","freq_now_sigma"]
+    df_cols = ["idx", "count", "dtime", "freq", "freq_now", "freq_now_ave", "freq_now_sigma"]
     wr.writerow(df_cols)
-    ClearCounter()
-    itt=0
-    freq_now_sum=0
-    freq_now_ssq=0
+    clear_counter()
+    itt = 0
+    freq_now_sum = 0
+    freq_now_ssq = 0
 
-    time_start=time.time()
-    GPIO.output(Counter_Gate,1)  # Start the counter
-    last_count=0
-    last_now=time_start
+    time_start = time.time()
+    GPIO.output(Counter_Gate, 1)  # Start the counter
+    last_count = 0
+    last_now = time_start
     try:
         while time_now < time_start+3600*1:  # Run for 1 hour
-            itt+=1
+            itt += 1
             time.sleep(0.9976)              # Sleep for not quite 1 second while the counter counts.
-            count = LoadAndShift()
-            now= time.time()
-            diff_count=count-last_count
-            diff_time=now-last_now
-            last_count=count
-            last_now=now
-            dt=now-time_start
-            freq=count/dt
-            freq_now=diff_count/diff_time
+            count = load_and_shift()
+            now = time.time()
+            diff_count = count-last_count
+            diff_time = now-last_now
+            last_count = count
+            last_now = now
+            dt = now-time_start
+            freq = count/dt
+            freq_now = diff_count/diff_time
             if itt != 1:                  # The first call often has extra count(s), so skip in the averaging.
                 freq_now_sum += freq_now
                 freq_now_ssq += freq_now*freq_now
                 freq_now_ave = freq_now_sum/itt
-                freq_now_sigma= math.sqrt(freq_now_ssq/itt - freq_now_ave*freq_now_ave)
-                M.WriteFloat(freq)
-                print("{:14d} ({:9d}), {:12.4f} ({:4.3f}), {:16.8f}, {:16.8f}, {:16.8f}+/-{:12.8f} ".format(count,diff_count,dt,diff_time,freq,freq_now,freq_now_ave,freq_now_sigma)) # Print the itteration and the counts.
+                freq_now_sigma = math.sqrt(freq_now_ssq/itt - freq_now_ave*freq_now_ave)
+                M.write_float(freq)
+                print("{:14d} ({:9d}), {:12.4f} ({:4.3f}), {:16.8f}, {:16.8f}, {:16.8f}+/-{:12.8f} "
+                      .format(count, diff_count, dt, diff_time, freq, freq_now, freq_now_ave, freq_now_sigma))
+                # Print the itteration and the counts.
                 sys.stdout.flush()
-                wr.writerow([itt,count,dt,freq,freq_now,freq_now_ave,freq_now_sigma])
+                wr.writerow([itt, count, dt, freq, freq_now, freq_now_ave, freq_now_sigma])
     except KeyboardInterrupt:
         print("Interrupted.")
     except Exception as e:
@@ -137,8 +144,9 @@ def Main():
         print(e)
     finally:
         fout.close()
-        Cleanup()
+        cleanup()
+
 
 if __name__ == "__main__":
-    Main()
+    main()
     sys.exit()
