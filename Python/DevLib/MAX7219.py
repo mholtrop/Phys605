@@ -59,7 +59,14 @@ class MAX7219:
         self._dev.mode = 0
         self._dev.max_speed_hz = self._CLK
         self._dev.bits_per_word = 8
-
+        self._translate = {" ": 0b00000000, "A": 0b01110111, "B": 0b00011111, "C": 0b01001110, "D": 0b00111101,
+                           "E": 0b01001111, "F": 0b01000111, "G": 0b01111011, "H": 0b00110111, "I": 0b00000110,
+                           "J": 0b00111000, "K": 0b00110111, "L": 0b00001110, "M": 0b10010011, "N": 0b00010101,
+                           "O": 0b00011101, "P": 0b01100111, "Q": 0b01110011, "R": 0b00000101, "S": 0b01011011,
+                           "T": 0b00001111, "U": 0b00011100, "V": 0b00111110, "W": 0b10111110, "X": 0b10100101,
+                           "Y": 0b00100111, "Z": 0b01101101, "1": 0b00110000, "2": 0b01101101, "3": 0b01111001,
+                           "4": 0b00110011, "5": 0b01011011, "6": 0b01011111, "7": 0b01110000, "8": 0b01111111,
+                           "9": 0b01110011, "0": 0b01111110}
         self.init(mode)
 
     def init(self, mode):
@@ -125,6 +132,8 @@ class MAX7219:
         if self._Mode != 1:
             raise ValueError()
 
+        self.write_loc_char(0x09, 0xFF)  # Set to interpret mode.
+
         if n > 99999999 or n < -9999999:  # Display overflow, --------
             for i in range(8):
                 self.write_loc_char(i + 1, 0x0A)
@@ -157,6 +166,8 @@ class MAX7219:
         if self._Mode != 1:
             raise ValueError()
 
+        self.write_loc_char(0x09, 0xFF)  # Set to interpret mode.
+
         s = form.format(f)
         loc = 1
         high_bit = 0
@@ -188,6 +199,26 @@ class MAX7219:
             self.write_loc_char(loc, 0x0F)  # Write blank
             loc += 1
 
+    def write_text(self, text):
+        """Attempt to write the text given. This is pretty limited, since not all characters work
+        for a 7-segment display."""
+        if len(text) > 8:
+            print("Text supplied will not fit on display.")
+
+        if self._Mode == 1:
+            self.write_loc_char(0x09, 0x00)   # Set to raw mode.
+
+        out_str = "{:>8s}".format(text)
+        loc = 8
+        for lett in out_str.upper():
+
+            out = 0b1000000
+            if lett in self._translate:
+                out = self._translate[lett]
+
+            self.write_loc_char(loc, out)
+            loc = loc - 1
+
     def __str__(self):
         """Write something comforting to the user :-) """
         if self._DATA > 0:
@@ -206,6 +237,7 @@ def main(argv):
     CS_bar pin = 6
     Unless different pins are specified on the command line.
     """
+    import random
 
     if len(argv) < 4:
         max_data = 4
@@ -224,10 +256,43 @@ def main(argv):
         else:
             print("Using SPIdev with CLK->{} CS->{} ".format(max_clock, max_cs_bar))
 
+    print("Use crtl-c to interrupt. ")
     mchip = MAX7219(cs_bar_pin=max_cs_bar, clk_pin=max_clock, data_pin=max_data)
     num = 12345678
     mchip.write_int(num)
+    print(num)
     time.sleep(1)
+    mchip.write_float(9.87654321)
+    time.sleep(1)
+    mchip.write_float(1.23E12, "{:9.2e}")
+    time.sleep(1)
+    for text in ["DEAD    ", "    BEEF", "BAD FOOD", "  HELP  ", "  ERROR ", "ABCDEFGH", "IJKLMNOP",
+                 "QRSTUVWX", "YZ 12345"]:
+        mchip.write_text(text)
+        time.sleep(2)
+
+    num = 76543210
+    mchip.write_int(num)
+    print(num)
+    time.sleep(1)
+
+    # Test raw mode.
+    mchip.write_loc_char(0x09, 0x00)
+    for i in range(1, 9):
+        mchip.write_loc_char(i, 0)
+
+    for i in range(7, -1, -1):
+        for j in range(1, 9):
+            mchip.write_loc_char(j, 1 << i)
+        time.sleep(0.2)
+
+    for i in range(40):
+        for j in range(1, 9):
+            mchip.write_loc_char(j, random.randint(1, 255))
+        time.sleep(0.1)
+
+    mchip.write_loc_char(0x09, 0xFF)
+
     try:
         for i in range(num, 0, -1):
             mchip.write_int(i)
