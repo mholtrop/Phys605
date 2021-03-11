@@ -10,7 +10,7 @@
 # This original Adafruit_GPIO/SPI.py is found here:
 # https://raw.githubusercontent.com/adafruit/Adafruit_Python_GPIO/master/Adafruit_GPIO/SPI.py
 #
-##### Copyright notice on the original example:
+# Copyright notice on the original example:
 #
 # Copyright (c) 2014 Adafruit Industries
 # Author: Tony DiCola
@@ -34,18 +34,19 @@
 # THE SOFTWARE.
 try:
     import RPi.GPIO as GPIO             # Import the Raspberry Pi version of GPIO
-except:
+except ImportError:
     try:
         import Adafruit_BBIO as GPIO    # If you are using a Beagle Bone.
-    except:
+    except ImportError:
         raise RuntimeError("It seems that no GPIO system was found. Please check your installation.")
 
 import operator
 
+
 class BBSpiDev(object):
     """Software-based implementation of the SPI protocol over GPIO pins."""
 
-    def __init__(self, CS,CLK,MOSI=None,MISO=None):
+    def __init__(self, cs, clk, mosi=None, miso=None):
         """Initialize bit bang (or software) based SPI.
         If MOSI or MISO are set to None then writes (reads) will be disabled and fail
         with an error. Otherwise:
@@ -54,10 +55,10 @@ class BBSpiDev(object):
         MOSI-> the Master Out/Slave in,  or chip data in pin.
         MISO-> the Master In /Slave out, or chip data out pin.
         """
-        self._sclk = CLK
-        self._mosi = MOSI
-        self._miso = MISO
-        self._cs = CS
+        self._sclk = clk
+        self._mosi = mosi
+        self._miso = miso
+        self._cs = cs
 
         # Set pins as outputs/inputs.
         GPIO.setmode(GPIO.BCM)
@@ -69,11 +70,11 @@ class BBSpiDev(object):
         if self._cs is not None:
             GPIO.setup(self._cs, GPIO.OUT)
             # Assert SS high to start with device communication off.
-            GPIO.output(self._cs,1)
+            GPIO.output(self._cs, 1)
 
         # Assume mode 0.
-        self.mode=0
-        self.lsbfirst=True
+        self.mode = 0
+        self.lsbfirst = True
 
     def __del__(self):
         """Cleanup the GPIO when closing. """
@@ -91,7 +92,7 @@ class BBSpiDev(object):
 
     @property
     def mode(self):
-        return(self.__mode)
+        return self.__mode
 
     @mode.setter
     def mode(self, mode):
@@ -99,7 +100,7 @@ class BBSpiDev(object):
         numeric value 0, 1, 2, or 3.  See wikipedia page for details on meaning:
         http://en.wikipedia.org/wiki/Serial_Peripheral_Interface_Bus
         """
-        self.__mode=mode
+        self.__mode = mode
         if mode < 0 or mode > 3:
             raise ValueError('Mode must be a value 0, 1, 2, or 3.')
         if mode & 0x02:
@@ -119,7 +120,7 @@ class BBSpiDev(object):
 
     @property
     def lsbfirst(self):
-        return(self.__lsbfirst)
+        return self.__lsbfirst
 
 
     @lsbfirst.setter
@@ -132,7 +133,7 @@ class BBSpiDev(object):
         # read or write, and appropriate left/right shift operator function for
         # reading/writing.
         self.__lsbfirst = order
-        if order == False:
+        if not order:
             self._mask = 0x01
             self._write_shift = operator.rshift
             self._read_shift = operator.lshift
@@ -143,13 +144,12 @@ class BBSpiDev(object):
 
     @property
     def max_speed_hz(self):
-        return(0)
+        return 0
 
     @max_speed_hz.setter
     def max_speed_hz(self,val):
         """max_speed_hz is not implemented """
         print("max_speed_hz is ignored for software SPI")
-
 
     def writebytes(self, data, assert_ss=True, deassert_ss=True):
         """Half-duplex SPI write.  If assert_ss is True, the SS line will be
@@ -160,20 +160,20 @@ class BBSpiDev(object):
         if self._mosi is None:
             raise RuntimeError('Write attempted with no MOSI pin specified.')
         if assert_ss and self._cs is not None:
-            GPIO.output(self._cs,0)
+            GPIO.output(self._cs, 0)
         for byte in data:
             for i in range(8):
                 # Write bit to MOSI.
                 if self._write_shift(byte, i) & self._mask:
-                    GPIO.output(self._mosi,1)
+                    GPIO.output(self._mosi, 1)
                 else:
-                    GPIO.output(self._mosi,0)
+                    GPIO.output(self._mosi, 0)
                 # Flip clock off base.
                 GPIO.output(self._sclk, not self._clock_base)
                 # Return clock to base.
                 GPIO.output(self._sclk, self._clock_base)
         if deassert_ss and self._cs is not None:
-            GPIO.output(self._cs,1)
+            GPIO.output(self._cs, 1)
 
     def readbytes(self, length, assert_ss=True, deassert_ss=True):
         """Half-duplex SPI read.  If assert_ss is true, the SS line will be
@@ -184,7 +184,7 @@ class BBSpiDev(object):
         if self._miso is None:
             raise RuntimeError('Read attempted with no MISO pin specified.')
         if assert_ss and self._cs is not None:
-            GPIO.output(self._cs,0)
+            GPIO.output(self._cs, 0)
         result = bytearray(length)
         for i in range(length):
             for j in range(8):
@@ -209,21 +209,21 @@ class BBSpiDev(object):
                         # Set bit to 0 at appropriate location.
                         result[i] &= ~self._read_shift(self._mask, j)
         if deassert_ss and self._cs is not None:
-            GPIO.output(self._cs,1)
+            GPIO.output(self._cs, 1)
         return result
 
-    def xfer(self,data):
+    def xfer(self, data):
         """Simulate the xfer (transfer data) function of spidev.
        Bytes of data are transferred and between each byte the CS line is
        deasserted and reasserted (0->1 1->0) to indicate next byte.
        """
-        return(self.transer(data,xfer_mode=1))
+        return self.transer(data, xfer_mode=1)
 
-    def xfer2(self,data):
+    def xfer2(self, data):
         """Simulate the xfer2 (transfer data without cs toggle) function of spidev.
        Bytes of data are transferred as one continuous bitstream.
        """
-        return(self.transer(data,xfer_mode=2))
+        return self.transer(data, xfer_mode=2)
 
     def transfer(self, data, assert_ss=True, deassert_ss=True, xfer_mode=1):
         """Full-duplex SPI read and write.  If assert_ss is true, the SS line
@@ -236,19 +236,19 @@ class BBSpiDev(object):
             raise RuntimeError('Write attempted with no MOSI pin specified.')
         if self._mosi is None:
             raise RuntimeError('Read attempted with no MISO pin specified.')
-        if self._cs is None or (xfer_mode == 1 and ( not deassert_ss or not assert_ss)):
+        if self._cs is None or (xfer_mode == 1 and (not deassert_ss or not assert_ss)):
             raise RuntimeError('xfer_mode=1 must lower and raise the CS pin.')
 
         if assert_ss and self._cs is not None:
-            GPIO.output(self._cs,0)
+            GPIO.output(self._cs, 0)
         result = bytearray(len(data))
         for i in range(len(data)):
             for j in range(8):
                 # Write bit to MOSI.
                 if self._write_shift(data[i], j) & self._mask:
-                    GPIO.output(self._mosi,1)
+                    GPIO.output(self._mosi, 1)
                 else:
-                    GPIO.output(self._mosi,0)
+                    GPIO.output(self._mosi, 0)
                 # Flip clock off base.
                 GPIO.output(self._sclk, not self._clock_base)
                 # Handle read on leading edge of clock.
@@ -270,10 +270,10 @@ class BBSpiDev(object):
                         # Set bit to 0 at appropriate location.
                         result[i] &= ~self._read_shift(self._mask, j)
 
-            if xfer_mode==1 and self._cs is not None:
-                GPIO.output(self._ss,1)
-                GPIO.output(self._ss,0)
+            if xfer_mode == 1 and self._cs is not None:
+                GPIO.output(self._ss, 1)
+                GPIO.output(self._ss, 0)
 
         if deassert_ss and self._cs is not None:
-            GPIO.output(self._ss,1)
+            GPIO.output(self._ss, 1)
         return result

@@ -19,7 +19,7 @@ def Main():
     try:
         while True:
             for ch in range(adc.get_channel_max()):
-                val = adc.ReadADC(ch)   # Read the data from the analog input number 0.
+                val = adc.read_adc(ch)   # Read the data from the analog input number 0.
                 # Print the value in decimal, hexadecimal, and binary format.
                 # Binary format: {:0b} prints the value in 1 and 0,
                 print("Ch: {:2d} Value: {:4d} (0x{:04X} = 0b{:012b})".format(ch,val,val,val))
