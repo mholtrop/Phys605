@@ -67,8 +67,11 @@
 #   * Further reduce the number of reads of the control register.
 #
 import time
-import smbus
-import ctypes
+try:
+    import smbus
+except ImportError:
+    pass
+
 
 class ADS1115(object):
     """ADS1115 16-bit ADC
@@ -76,27 +79,28 @@ class ADS1115(object):
 
     # Maping of gain values to config register values.
     ADS1115_CONFIG_FULLSCALE = {
-        6.144:   0b000<<9,
-        4.096:   0b001<<9,
-        2.048:   0b010<<9,
-        1.024:   0b011<<9,
-        0.512:   0b100<<9,
-        0.256 :  0b101<<9
+        6.144: 0b000 << 9,
+        4.096: 0b001 << 9,
+        2.048: 0b010 << 9,
+        1.024: 0b011 << 9,
+        0.512: 0b100 << 9,
+        0.256: 0b101 << 9
     }
     ADS1115_CONFIG_FULLSCALE_REV = {v: k for k, v in ADS1115_CONFIG_FULLSCALE.items()}
     # Mapping of data/sample rate to config register values for ADS1015 (faster).
     # Mapping of data/sample rate to config register values for ADS1115 (slower).
     ADS1115_CONFIG_DATARATE = {
-        8:    0b000<<5,
-        16:   0b001<<5,
-        32:   0b010<<5,
-        64:   0b011<<5,
-        128:  0b100<<5,
-        250:  0b101<<5,
-        475:  0b110<<5,
-        860:  0b111<<5
+        8:   0b000 << 5,
+        16:  0b001 << 5,
+        32:  0b010 << 5,
+        64:  0b011 << 5,
+        128: 0b100 << 5,
+        250: 0b101 << 5,
+        475: 0b110 << 5,
+        860: 0b111 << 5
     }
     ADS1115_CONFIG_DATARATE_REV = {v: k for k, v in ADS1115_CONFIG_DATARATE.items()}
+
 
     class my_values:
         """Class for getting the value of the chip, which mimics a list."""
