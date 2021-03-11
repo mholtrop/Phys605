@@ -148,7 +148,6 @@ class MCP4725(object):
         self.write(raw_value)
 
 
-
 def main(argv):
     '''Test code for the MCP4725 driver.
     This will slowly ramp the output from 0 to Vcc, then reset to 0'''

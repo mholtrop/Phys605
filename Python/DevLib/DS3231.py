@@ -58,44 +58,43 @@ import smbus
 
 class DS3231(object):
     def __init__(self,bus=1,address=0x68):
-        '''This class opens the I2C bus using smbus and then reads the DS3231 RTC chip
+        """This class opens the I2C bus using smbus and then reads the DS3231 RTC chip
         which should be at address 0x68 on I2C channel 1 for a Raspberry Pi.
-        '''
+        """
         try:
             self._bus = smbus.SMBus(bus)
         except IOError:
             print("Error opening SMBus {}. Please make sure the Raspberry Pi is setup to read this bus.".format(bus))
-            return(None)
 
-        self._address=address            # Set by the hardware = 0b1101000
-        self._buf=[]
-        self.Read_Buffer() # Test read 32-bytes.
+        self._address = address            # Set by the hardware = 0b1101000
+        self._buf = []
+        self.read_buffer()  # Test read 32-bytes.
 
-    def bcd(self,b):
-        '''Decode the BCD encoded number b into a normal int.'''
-        return( (b>>4)*10 + (b&0xF))
+    def bcd(self, b):
+        """Decode the BCD encoded number b into a normal int."""
+        return (b >> 4)*10 + (b & 0xF)
 
-    def to_bcd(self,d):
-        '''Encode the integer d to bcd.'''
-        return( (d//10)*16 + d%10 )
+    def to_bcd(self, d):
+        """Encode the integer d to bcd."""
+        return (d // 10) * 16 + d % 10
 
-    def Read_Buffer(self):
-        '''Read the entire buffer of 18 bytes from the DS3231 using a single 32-word read.'''
+    def read_buffer(self):
+        """Read the entire buffer of 18 bytes from the DS3231 using a single 32-word read."""
         try:
             self._buf = self._bus.read_i2c_block_data(self._address,0x0) # Read 32 bytes of data and put in the clock.
         except IOError:
             print("Error reading from address {}, make sure the DS3231 is properly connected.".format(self._address))
             return(None)
 
-        return(self._buf)
+        return self._buf
 
-    def GetDateTime(self):
-        '''Return the date and time in a datetime structure. '''
-        buf = self.Read_Buffer()
+    def get_date_time(self):
+        """Return the date and time in a datetime structure. """
+        buf = self.read_buffer()
         # class datetime.datetime(year, month, day[, hour[, minute[, second[, microsecond[, tzinfo]]]]])
         year = 2000 + (buf[0x05]>>7)*100 + self.bcd(buf[0x06])
-        month= self.bcd(buf[0x05]&0x7F)
-        day  = self.bcd(buf[0x04])
+        month = self.bcd(buf[0x05]&0x7F)
+        day = self.bcd(buf[0x04])
         if (buf[0x02] & 0b01000000)>0 : # Clock is in 12 hour mode.
             hour = self.bcd(buf[0x02]&0x1F) + 12*(buf[0x02]&0b00100000>0)  # If PM add 12 hours.
         else:
@@ -103,137 +102,135 @@ class DS3231(object):
         mins = self.bcd(buf[0x01])
         secs = self.bcd(buf[0x00])
         dattim = datetime(year,month,day,hour,mins,secs)
-        return(dattim)
+        return dattim
 
-    def GetTemp(self):
-        '''Read the temperature of the DS3231, and return the result in centigrade'''
+    def get_temp(self):
+        """Read the temperature of the DS3231, and return the result in centigrade"""
         MSB_temp = self._bus.read_byte_data(self._address,0x11)
         LSB_temp = self._bus.read_byte_data(self._address,0x12)
-        return(MSB_temp + 0.25*((LSB_temp)>>6) )
+        return MSB_temp + 0.25 * ((LSB_temp) >> 6)
 
-    def GetStatus(self):
-        '''Return the status register 0x0F'''
+    def get_status(self):
+        """Return the status register 0x0F"""
         status=self._bus.read_byte_data(self._address,0x0F)
-        return(status)
+        return status
 
-    def SetStatus(self,val):
-        '''Set the status register 0x0F'''
+    def set_status(self, val):
+        """Set the status register 0x0F"""
         self._bus.write_byte_data(self._address,0x0F,val)
 
-    def Enable32kHz(self):
-        '''Set the 32k output pin to oscillate a square wave at about 32kHz'''
-        status = self.GetStatus()
+    def enable32k_hz(self):
+        """Set the 32k output pin to oscillate a square wave at about 32kHz"""
+        status = self.get_status()
         status = status | 0x08    # Set bit3
-        self.SetStatus(status)
+        self.set_status(status)
 
-    def Disable32kHz(self):
-        '''Set the 32k output pin to NOT oscillate.'''
-        status = self.GetStatus()
+    def disable32k_hz(self):
+        """Set the 32k output pin to NOT oscillate."""
+        status = self.get_status()
         status = status & (0x08 ^ 0xFF) # Unset bit3
-        self.SetStatus(status)
+        self.set_status(status)
 
-    def Status32kHz(self):
-        '''Return 1 when 32 kHz pin is enabled, 0 if disabled.'''
-        status=self.GetStatus()
-        return( (status&0x08)>>3)
+    def status32k_hz(self):
+        """Return 1 when 32 kHz pin is enabled, 0 if disabled."""
+        status=self.get_status()
+        return (status & 0x08) >> 3
 
-    def GetControl(self):
-        '''Return the control/status register 0x0E'''
+    def get_control(self):
+        """Return the control/status register 0x0E"""
         status=self._bus.read_byte_data(self._address,0x0E)
-        return(status)
+        return status
 
-    def SetControl(self,val):
-        '''Set the control/status register 0x0E'''
+    def set_control(self, val):
+        """Set the control/status register 0x0E"""
         self._bus.write_byte_data(self._address,0x0E,val)
 
-    def EnableSQW(self):
-        '''Enable the SQW output '''
-        control = self.GetControl()
+    def enable_sqw(self):
+        """Enable the SQW output """
+        control = self.get_control()
         control = control & (0x04 ^ 0xFF) # Unset bit2
-        self.SetControl(control)
+        self.set_control(control)
 
-    def DisableSQW(self):
-        '''Disable the SQW output '''
-        control = self.GetControl()
+    def disable_sqw(self):
+        """Disable the SQW output """
+        control = self.get_control()
         control = control | (0x04) # Set bit2
-        self.SetControl(control)
+        self.set_control(control)
 
-    def StatusSQW(self):
-        '''Return 1 if SQW is enable, 0 if it is not.'''
-        control = self.GetControl()
-        return( ((control&0x04)>>2)^0x01 )  # Return the complement of bit2
+    def status_sqw(self):
+        """Return 1 if SQW is enable, 0 if it is not."""
+        control = self.get_control()
+        return ((control & 0x04) >> 2) ^ 0x01  # Return the complement of bit2
 
-    def SetSQWFreq(self,choice):
-        '''Set the SQW frequencey:
+    def set_sqw_freq(self, choice):
+        """Set the SQW frequencey:
         0 = 1 Hz
         1 = 1.024 kHz
         2 = 4.096 kHz
         3 = 8.192 kHz
-        '''
+        """
         assert 0 <= choice <= 3
-        control = self.GetControl()
+        control = self.get_control()
         control = control & 0xE7
-        control  = control | (choice<<3)
-        self.SetControl(control)
+        control = control | (choice<<3)
+        self.set_control(control)
 
-        
+    def set_to_now(self):
+        """Set the DS3231 to the current time of the RPi. datetime.datetime.now() """
+        self.set_time(datetime.now())
 
-
-    def SetToNow(self):
-        '''Set the DS3231 to the current time of the RPi. datetime.datetime.now() '''
-        self.SetTime(datetime.now())
-
-    def SetTimeUTCNow(self):
-        '''Set the DS3231 to the current time in UTC timezone. datetime.datetime.utcnow() '''
-        self.SetTime(datetime.utcnow())
+    def set_time_utc_now(self):
+        """Set the DS3231 to the current time in UTC timezone. datetime.datetime.utcnow() """
+        self.set_time(datetime.utcnow())
 
 
-    def SetTime(self,dattime):
-        '''Set the DS3231 to the datetime in the argument. '''
+    def set_time(self, dattime):
+        """Set the DS3231 to the datetime in the argument. """
 
         year = dattime.year
         cent_bit = (year-2000)//100
         year = self.to_bcd(year%100)
-        month= self.to_bcd(dattime.month) + cent_bit * 0b01000000
+        month = self.to_bcd(dattime.month) + cent_bit * 0b01000000
         day = self.to_bcd(dattime.day)
-        weekday= dattime.weekday()
+        weekday = dattime.weekday()
         hours = self.to_bcd(dattime.hour)
-        mins  = self.to_bcd(dattime.minute)
-        secs  = self.to_bcd(dattime.second)
-        buf_out=[secs,mins,hours,weekday,day,month,year]
+        mins = self.to_bcd(dattime.minute)
+        secs = self.to_bcd(dattime.second)
+        buf_out =[ secs,mins,hours,weekday,day,month,year]
         for i in range(len(buf_out)):
             self._bus.write_word_data(self._address,i,buf_out[i])
 
-    def SetAlarm1(self,dattime):
-        '''Set the alarm1 on the DS3231. '''
+    def set_alarm1(self, dattime):
+        """Set the alarm1 on the DS3231. """
         print("Implement me!")
 
-    def SetAlarm2(self,dattime):
-        '''Set the alarm2 on the DS3231. '''
+    def set_alarm2(self, dattime):
+        """Set the alarm2 on the DS3231. """
         print("Implement me!")
 
     def __str__(self):
-        '''Return current time as string.'''
-        return( str(self.GetDateTime()))
+        """Return current time as string."""
+        return str(self.get_date_time())
 
     @property
     def datetime(self):
         """
         The time according to the RTC clock as a datetime.
         """
-        return(self.GetDateTime())
+        return(self.get_date_time())
 
     @datetime.setter
     def datetime(self, val):
         self.SetTim(val)
 
-def main(argv):
-    '''Test code for the DS3231 driver.
-    This will simply print the time and the temperature as provided by the device.'''
 
-    T = DS3231()
-    dt = T.GetDateTime()
-    temp=T.GetTemp()
+def main(argv):
+    """Test code for the DS3231 driver.
+    This will simply print the time and the temperature as provided by the device."""
+
+    tim = DS3231()
+    dt = tim.get_date_time()
+    temp = tim.get_temp()
     print("It is now {}".format(dt.strftime("%c")))
     print("Temp: {:6.3f}C".format(temp))
 

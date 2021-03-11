@@ -31,6 +31,7 @@ except:
 import spidev
 # from DevLib import BBSpiDev
 
+
 class MCP4822(object):
 
     #

@@ -8,8 +8,8 @@
 
 import smbus
 
-class ISL29125:
 
+class ISL29125:
     # Constants from the DATA SHEET.
     # Following the Sparkfun Arduino Driver names.
     #
@@ -104,44 +104,44 @@ class ISL29125:
     FLAG_CONV_B = 0x30
 
     def __init__(self):
-        '''Initialize the class. Currently no arguments needed.'''
+        """Initialize the class. Currently no arguments needed."""
 
         self._dev = smbus.SMBus(1)
 
-        ans=self._dev.read_i2c_block_data(self.ISL_I2C_ADDR,self.DEVICE_ID,1)
-        if( ans[0] != self.DEVICE_ID_ANSWER ):
-            print("Device not found at address {}. Device id returned = {}".format(self.ISL_I2C_ADDR,ans[0]))
-            return(0)
+        ans = self._dev.read_i2c_block_data(self.ISL_I2C_ADDR, self.DEVICE_ID, 1)
+        if ans[0] != self.DEVICE_ID_ANSWER:
+            print("Device not found at address {}. Device id returned = {}".format(self.ISL_I2C_ADDR, ans[0]))
+            return 0
 
-        self.reset() # Reset all registers to defaut state.
+        self.reset()  # Reset all registers to defaut state.
 
         # Set the device for RGB data, 10k LUX
-        self.config( (self.CFG1_MODE_RGB | self.CFG1_10KLUX, self.CFG2_IR_ADJUST_HIGH, self.CFG_DEFAULT) );
+        self.config((self.CFG1_MODE_RGB | self.CFG1_10KLUX, self.CFG2_IR_ADJUST_HIGH, self.CFG_DEFAULT));
 
     def reset(self):
-        ''' Reset all the device control registers to default state = 0 '''
+        """ Reset all the device control registers to default state = 0 """
         self._dev.write_byte_data(self.ISL_I2C_ADDR,self.DEVICE_ID,self.DEVICE_RESET_COMMAND)
 
         dat = []
         for i in range(3):
             dat.append(self._dev.read_byte_data(self.ISL_I2C_ADDR,self.CONFIG_1+i))
 
-        if(sum(dat)!=0):
+        if sum(dat) != 0:
             print("Device RESET not successful. Please check your device.")
-            return(1)
+            return 1
 
-        return(0)
+        return 0
 
-    def config(self,dat):
-        ''' Configure the device according to the argument in dat.
-        Pass a list with 3 values: (config_1,config_2,config_3) '''
+    def config(self, dat):
+        """ Configure the device according to the argument in dat.
+        Pass a list with 3 values: (config_1,config_2,config_3) """
 
         for i in range(3):
             self._dev.write_byte_data(self.ISL_I2C_ADDR,self.CONFIG_1+i,dat[i])
 
-    def ReadRGB(self):
-        ''' Read the G,R,B register (Low,High) and convert to 3 16-bit integers.
-        Return: [G, R, B] tuple. Note the order of colors!'''
+    def read_rgb(self):
+        """ Read the G,R,B register (Low,High) and convert to 3 16-bit integers.
+        Return: [G, R, B] tuple. Note the order of colors!"""
 
         # We read 6 bytes starting at GREEN_L = 0x09.
         # This will return [GREEN_L,GREEN_H,RED_L,RED_H,BLUE_L,BLUE_H]
@@ -151,5 +151,5 @@ class ISL29125:
 
         out = []
         for i in range(3):
-            out.append(dat[i*2] + (dat[i*2+1]<<8) )
-        return(out)
+            out.append(dat[i*2] + (dat[i*2+1] << 8))
+        return out

@@ -40,6 +40,5 @@ class MyValues:
         return str(self)
 
     def __str__(self):
-        tmplist = [x for x in self]
-        return str(tmplist)
-
+        tmp_list = [x for x in self]
+        return str(tmp_list)
