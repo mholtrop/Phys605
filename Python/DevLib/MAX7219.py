@@ -80,13 +80,7 @@ class MAX7219:
         self.write_loc_char(0x0B, 0x07)  # All 8 digits
         self.write_loc_char(0x0A, 0x0B)  # Quite bright
         self.write_loc_char(0x0C, 1)     # Set for normal operation.
-        if mode == 1:
-            self._Mode = 1
-            self.write_loc_char(0x09, 0xFF)  # Decode mode
-        else:
-            self._Mode = 0
-            self.write_loc_char(0x09, 0x00)  # Raw mode
-
+        self.set_mode(mode)
         self.clear()
 
     def __del__(self):          # This is automatically called when the class is deleted.
@@ -101,6 +95,16 @@ class MAX7219:
                 self.write_loc_char(i + 1, 0x0F)  # Blank
             else:
                 self.write_loc_char(i + 1, 0x00)  # Blank
+
+    def set_mode(self, mode=1):
+        """Set the decode mode. If mode=1 the data written will be decoded as numbers. If mode=0 the
+        device is in raw mode. For the write_text() we need raw mode."""
+        self._Mode = mode
+        if mode == 1:
+            self.write_loc_char(0x09, 0xFF)  # Decode mode
+        else:
+            self.write_loc_char(0x09, 0x00)  # Raw mode
+
 
     def set_brightness(self, brightness):
         """Set the display brightness to B, where 0<=B<16"""
@@ -130,7 +134,7 @@ class MAX7219:
         fits, an overflow is indicated by all dash."""
 
         if self._Mode != 1:
-            raise ValueError()
+            set_mode(1)
 
         self.write_loc_char(0x09, 0xFF)  # Set to interpret mode.
 
@@ -164,7 +168,7 @@ class MAX7219:
         style, to use with form="{:4.2f}" or form="{:8.4e}" """
 
         if self._Mode != 1:
-            raise ValueError()
+            self.set_mode(1)
 
         self.write_loc_char(0x09, 0xFF)  # Set to interpret mode.
 
@@ -206,7 +210,7 @@ class MAX7219:
             print("Text supplied will not fit on display.")
 
         if self._Mode == 1:
-            self.write_loc_char(0x09, 0x00)   # Set to raw mode.
+            self.set_mode(0)
 
         out_str = "{:>8s}".format(text)
         loc = 8
