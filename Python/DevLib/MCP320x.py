@@ -53,7 +53,7 @@ try:
 except ImportError as error:
     pass
 
-from .MyValues import MyValues
+from DevLib.MyValues import MyValues
 
 
 class MCP320x:

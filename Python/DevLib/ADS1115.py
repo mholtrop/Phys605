@@ -72,7 +72,7 @@ try:
 except ImportError:
     pass
 
-from .MyValues import MyValues
+from DevLib.MyValues import MyValues
 
 
 class ADS1115(object):
