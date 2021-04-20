@@ -32,7 +32,7 @@ except ImportError:
 
 try:
     import spidev
-    import BBSpiDev
+    import DevLib.BBSpiDev
 except ImportError:
     pass
 
