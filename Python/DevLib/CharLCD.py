@@ -1,18 +1,27 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python
+####################################################################
+#  CharLCD
+#  Author: Maurik Holtrop
+####################################################################
 #
+# This is a simple driver to use the LCD Character 20x4 (or 16x2 or ...) displays
+# based on the HD44780 chip, that use the PCF8574 I2C port expander.
+# The code is intended for Python on a Raspberry Pi
+#
+####################################################################
+#
+# Documentation:
 # LCD Display: https://en.wikipedia.org/wiki/Hitachi_HD44780_LCD_controller
 # HD44780 Data sheet: https://www.sparkfun.com/datasheets/LCD/HD44780.pdf
 # Character Set - See: https://mil.ufl.edu/4744/docs/lcdmanual/characterset.html
 #
-# PCF8574 
+# PCF8574 Data sheet: https://www.ti.com/lit/ds/symlink/pcf8574.pdf
 #
+# Acknowledgements:
+# -----------------
 # This is an adaptation of code found at the
 # Circuit Basics site: https://www.circuitbasics.com/raspberry-pi-i2c-lcd-set-up-and-programming/
 # Original code found at: https://gist.github.com/DenisFromHR/cc863375a6e19dce359d
-# """
-# Compiled, mashed and generally mutilated 2014-2015 by Denis Pleic
-# Made available under GNU GENERAL PUBLIC LICENSE
-#
 # # Modified Python I2C library for Raspberry Pi
 # # as found on http://www.recantha.co.uk/blog/?p=4849
 # # Joined existing 'i2c_lib.py' and 'lcddriver.py' into a single library
@@ -20,7 +29,6 @@
 # # By DenisFromHR (Denis Pleic)
 # # 2015-02-10, ver 0.1
 #
-# """
 
 try:
     import smbus
@@ -73,6 +81,8 @@ class CharLCD:
     BACKLIGHT = 0x08
     NO_BACKLIGHT = 0x00
 
+    LINE_POSITIONS = [0, 0x40, 0x14, 0x54]
+
     En = 0b00000100  # Enable bit
     Rw = 0b00000010  # Read/Write bit
     Rs = 0b00000001  # Register select bit
@@ -82,71 +92,61 @@ class CharLCD:
         self._bus = smbus.SMBus(port)
         self._address = address
 
-        self.lcd_write(0x03)
-        self.lcd_write(0x03)
-        self.lcd_write(0x03)
-        self.lcd_write(0x02)
+        self._write_byte(0x03)
+        self._write_byte(0x03)
+        self._write_byte(0x03)
+        self._write_byte(0x02)
 
-        self.lcd_write(self.FUNCTIONSET | self.LCD_2LINE | self.LCD_5x8DOTS | self.LCD_4BITMODE)
-        self.lcd_write(self.DISPLAYCONTROL | self.DISPLAYON)
-        self.lcd_write(self.CLEARDISPLAY)
-        self.lcd_write(self.ENTRYMODESET | self.ENTRYLEFT)
+        self._write_byte(self.FUNCTIONSET | self.LCD_2LINE | self.LCD_5x8DOTS | self.LCD_4BITMODE)
+        self._write_byte(self.DISPLAYCONTROL | self.DISPLAYON)
+        self._write_byte(self.CLEARDISPLAY)
+        self._write_byte(self.ENTRYMODESET | self.ENTRYLEFT)
         sleep(0.2)
 
     # clocks EN to latch command
-    def lcd_strobe(self, data):
+    def _strobe(self, data):
         self._bus.write_byte(self._address, data | self.En | self.BACKLIGHT)
         sleep(.0005)
         self._bus.write_byte(self._address, ((data & ~self.En) | self.BACKLIGHT))
         sleep(.0001)
 
-    def lcd_write_four_bits(self, data):
+    def _write_nibble(self, data):
         self._bus.write_byte(self._address, data | self.BACKLIGHT)
-        self.lcd_strobe(data)
+        self._strobe(data)
 
     # write a command to lcd
-    def lcd_write(self, cmd, mode=0):
-        self.lcd_write_four_bits(mode | (cmd & 0xF0))
-        self.lcd_write_four_bits(mode | ((cmd << 4) & 0xF0))
-
-    # write a character to lcd (or character rom) 0x09: backlight | RS=DR<
-    # works!
-    def lcd_write_char(self, charvalue, mode=1):
-        self.lcd_write_four_bits(mode | (charvalue & 0xF0))
-        self.lcd_write_four_bits(mode | ((charvalue << 4) & 0xF0))
+    def _write_byte(self, cmd, mode=0):
+        self._write_nibble(mode | (cmd & 0xF0))
+        self._write_nibble(mode | ((cmd << 4) & 0xF0))
 
     # put string function with optional char positioning
-    def lcd_display_string(self, string, line=1, pos=0):
-        pos_new = pos
-        if line == 1:
-            pos_new = pos
-        elif line == 2:
-            pos_new = 0x40 + pos
-        elif line == 3:
-            pos_new = 0x14 + pos
-        elif line == 4:
-            pos_new = 0x54 + pos
+    def print(self, string, line=0, pos=0, wrap=0):
+        if line > 3:
+            # ERROR only 4 lines
+            pos_new = 0
+            self.clear()
+            string = "ERROR: only 4 lines "
 
-        self.lcd_write(0x80 + pos_new)
+        self._write_byte(0x80 + self.LINE_POSITIONS[line] + pos)
 
         for char in string:
-            self.lcd_write(ord(char), self.Rs)
+            self._write_byte(ord(char), mode=self.Rs)
 
     # clear lcd and set to home
-    def lcd_clear(self):
-        self.lcd_write(self.CLEARDISPLAY)
-        self.lcd_write(self.RETURNHOME)
+    def clear(self):
+        self._write_byte(self.CLEARDISPLAY)
+        self._write_byte(self.RETURNHOME)
 
     # define backlight on/off (lcd.backlight(1); off= lcd.backlight(0)
     def backlight(self, state):  # for state, 1 = on, 0 = off
         if state == 1:
-            self._bus.write_byte(self._address, self.BACKLIGHT)
+            self._bus._write_byte(self._address, self.BACKLIGHT)
         elif state == 0:
-            self._bus.write_byte(self._address, self.NO_BACKLIGHT)
+            self._bus._write_byte(self._address, self.NO_BACKLIGHT)
 
     # add custom characters (0 - 7)
-    def lcd_load_custom_chars(self, fontdata):
-        self.lcd_write(0x40)
+    def load_custom_chars(self, fontdata):
+        self._write_byte(0x40)
         for char in fontdata:
             for line in char:
-                self.lcd_write_char(line)
+                self._write_byte(line, mode=self.Rs)
