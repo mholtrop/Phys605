@@ -121,32 +121,89 @@ class CharLCD:
 
     # put string function with optional char positioning
     def print(self, string, line=0, pos=0, wrap=0):
+        """Write string to the screen on line=line at position=pos
+        If wrap=1 then wrap the line onto the next line if it is too long."""
         if line > 3:
-            # ERROR only 4 lines
-            pos_new = 0
+            # ERROR we have only 4 lines to work with.
+            pos = 0
             self.clear()
             string = "ERROR: only 4 lines "
 
-        self._write_byte(0x80 + self.LINE_POSITIONS[line] + pos)
+        # If we do not want wrap, truncate the string at the end of the screen.
+        if not wrap:
+            max_char = 20 - pos
+            string = string[0:max_char]
 
-        for char in string:
-            self._write_byte(ord(char), mode=self.Rs)
+        # Output the string until the end of the line, then wrap to the next line and continue.
+        while len(string):
+            self._write_byte(self.SETDDRAMADDR + self.LINE_POSITIONS[line] + pos)
+            max_char = 20 - pos
+            for char in string[0:max_char]:
+                self._write_byte(ord(char), mode=self.Rs)
+            string = string[max_char:]
+            pos = 0
+            line += 1
+            if line > 3:
+                line = 0
 
-    # clear lcd and set to home
+    # clear entire lcd and set to home
     def clear(self):
+        """Clear the entire display and return the write point to home."""
         self._write_byte(self.CLEARDISPLAY)
         self._write_byte(self.RETURNHOME)
+
+    def clear_line(self, line):
+        """Only clear a single line (by sending 20 spaces.)"""
+        self.print(" "*20, line=line, pos=0)
 
     # define backlight on/off (lcd.backlight(1); off= lcd.backlight(0)
     def backlight(self, state):  # for state, 1 = on, 0 = off
         if state == 1:
-            self._bus._write_byte(self._address, self.BACKLIGHT)
+            self._bus.write_byte(self._address, self.BACKLIGHT)
         elif state == 0:
-            self._bus._write_byte(self._address, self.NO_BACKLIGHT)
+            self._bus.write_byte(self._address, self.NO_BACKLIGHT)
+
+    def shift_display(self, right=0):
+        """Shift the entire display left (right) by one character."""
+        command = self.CURSORSHIFT + self.DISPLAYMOVE
+        if right:
+            command += self.MOVERIGHT
+        self._write_byte(command)
+
 
     # add custom characters (0 - 7)
     def load_custom_chars(self, fontdata):
-        self._write_byte(0x40)
+        self._write_byte(self.SETCGRAMADDR)
         for char in fontdata:
             for line in char:
                 self._write_byte(line, mode=self.Rs)
+
+
+def main(argv):
+    """Test function for the CharLCD class."""
+    lcd = CharLCD()
+
+    if len(argv) > 1:
+        line = 0
+        for i in range(1, len(argv)):
+            lcd.clear_line(line)
+            lcd.print(argv[i], line=line, wrap=1)
+            line += 1
+            if line > 3:
+                line = 0
+            sleep(1)
+    else:
+        offset = 33
+        for i in range(3):
+            for j in range(4):
+                string = ""
+                for k in range(20):
+                    string += chr(offset+k+j*20+i*20*4)
+                lcd.print(string, line=j, pos=0)
+            sleep(10)
+            lcd.clear()
+            sleep(1)
+
+if __name__ == '__main__':
+    import sys
+    main(sys.argv)
