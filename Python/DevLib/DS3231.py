@@ -57,8 +57,8 @@ import smbus
 
 
 class DS3231(object):
-    def __init__(self,bus=1,address=0x68):
-        """This class opens the I2C bus using smbus and then reads the DS3231 RTC chip
+    def __init__(self, bus=1, address=0x68):
+        """This class opens th e I2C bus using smbus and then reads the DS3231 RTC chip
         which should be at address 0x68 on I2C channel 1 for a Raspberry Pi.
         """
         try:
@@ -70,21 +70,23 @@ class DS3231(object):
         self._buf = []
         self.read_buffer()  # Test read 32-bytes.
 
-    def bcd(self, b):
+    @staticmethod
+    def bcd(b):
         """Decode the BCD encoded number b into a normal int."""
         return (b >> 4)*10 + (b & 0xF)
 
-    def to_bcd(self, d):
+    @staticmethod
+    def to_bcd(d):
         """Encode the integer d to bcd."""
         return (d // 10) * 16 + d % 10
 
     def read_buffer(self):
         """Read the entire buffer of 18 bytes from the DS3231 using a single 32-word read."""
         try:
-            self._buf = self._bus.read_i2c_block_data(self._address,0x0) # Read 32 bytes of data and put in the clock.
+            self._buf = self._bus.read_i2c_block_data(self._address, 0x0)  # Read 32 bytes of data and put in the clock.
         except IOError:
             print("Error reading from address {}, make sure the DS3231 is properly connected.".format(self._address))
-            return(None)
+            return None
 
         return self._buf
 
@@ -92,32 +94,32 @@ class DS3231(object):
         """Return the date and time in a datetime structure. """
         buf = self.read_buffer()
         # class datetime.datetime(year, month, day[, hour[, minute[, second[, microsecond[, tzinfo]]]]])
-        year = 2000 + (buf[0x05]>>7)*100 + self.bcd(buf[0x06])
-        month = self.bcd(buf[0x05]&0x7F)
+        year = 2000 + (buf[0x05] >> 7)*100 + self.bcd(buf[0x06])
+        month = self.bcd(buf[0x05] & 0x7F)
         day = self.bcd(buf[0x04])
-        if (buf[0x02] & 0b01000000)>0 : # Clock is in 12 hour mode.
-            hour = self.bcd(buf[0x02]&0x1F) + 12*(buf[0x02]&0b00100000>0)  # If PM add 12 hours.
+        if (buf[0x02] & 0b01000000) > 0:  # Clock is in 12 hour mode.
+            hour = self.bcd(buf[0x02] & 0x1F) + 12*(buf[0x02] & 0b00100000 > 0)  # If PM add 12 hours.
         else:
-            hour = self.bcd(buf[0x02]&0x3F)
+            hour = self.bcd(buf[0x02] & 0x3F)
         mins = self.bcd(buf[0x01])
         secs = self.bcd(buf[0x00])
-        dattim = datetime(year,month,day,hour,mins,secs)
+        dattim = datetime(year, month, day, hour, mins, secs)
         return dattim
 
     def get_temp(self):
         """Read the temperature of the DS3231, and return the result in centigrade"""
-        MSB_temp = self._bus.read_byte_data(self._address,0x11)
-        LSB_temp = self._bus.read_byte_data(self._address,0x12)
-        return MSB_temp + 0.25 * ((LSB_temp) >> 6)
+        msb_temp = self._bus.read_byte_data(self._address, 0x11)
+        lsb_temp = self._bus.read_byte_data(self._address, 0x12)
+        return msb_temp + 0.25 * (lsb_temp >> 6)
 
     def get_status(self):
         """Return the status register 0x0F"""
-        status=self._bus.read_byte_data(self._address,0x0F)
+        status = self._bus.read_byte_data(self._address, 0x0F)
         return status
 
     def set_status(self, val):
         """Set the status register 0x0F"""
-        self._bus.write_byte_data(self._address,0x0F,val)
+        self._bus.write_byte_data(self._address, 0x0F, val)
 
     def enable32k_hz(self):
         """Set the 32k output pin to oscillate a square wave at about 32kHz"""
@@ -128,33 +130,33 @@ class DS3231(object):
     def disable32k_hz(self):
         """Set the 32k output pin to NOT oscillate."""
         status = self.get_status()
-        status = status & (0x08 ^ 0xFF) # Unset bit3
+        status = status & (0x08 ^ 0xFF)  # Unset bit3
         self.set_status(status)
 
     def status32k_hz(self):
         """Return 1 when 32 kHz pin is enabled, 0 if disabled."""
-        status=self.get_status()
+        status = self.get_status()
         return (status & 0x08) >> 3
 
     def get_control(self):
         """Return the control/status register 0x0E"""
-        status=self._bus.read_byte_data(self._address,0x0E)
+        status = self._bus.read_byte_data(self._address, 0x0E)
         return status
 
     def set_control(self, val):
         """Set the control/status register 0x0E"""
-        self._bus.write_byte_data(self._address,0x0E,val)
+        self._bus.write_byte_data(self._address, 0x0E, val)
 
     def enable_sqw(self):
         """Enable the SQW output """
         control = self.get_control()
-        control = control & (0x04 ^ 0xFF) # Unset bit2
+        control = control & (0x04 ^ 0xFF)  # Unset bit2
         self.set_control(control)
 
     def disable_sqw(self):
         """Disable the SQW output """
         control = self.get_control()
-        control = control | (0x04) # Set bit2
+        control = control | 0x04  # Set bit2
         self.set_control(control)
 
     def status_sqw(self):
@@ -172,7 +174,7 @@ class DS3231(object):
         assert 0 <= choice <= 3
         control = self.get_control()
         control = control & 0xE7
-        control = control | (choice<<3)
+        control = control | (choice << 3)
         self.set_control(control)
 
     def set_to_now(self):
@@ -183,22 +185,21 @@ class DS3231(object):
         """Set the DS3231 to the current time in UTC timezone. datetime.datetime.utcnow() """
         self.set_time(datetime.utcnow())
 
-
     def set_time(self, dattime):
         """Set the DS3231 to the datetime in the argument. """
 
         year = dattime.year
         cent_bit = (year-2000)//100
-        year = self.to_bcd(year%100)
+        year = self.to_bcd(year % 100)
         month = self.to_bcd(dattime.month) + cent_bit * 0b01000000
         day = self.to_bcd(dattime.day)
         weekday = dattime.weekday()
         hours = self.to_bcd(dattime.hour)
         mins = self.to_bcd(dattime.minute)
         secs = self.to_bcd(dattime.second)
-        buf_out =[ secs,mins,hours,weekday,day,month,year]
+        buf_out = [secs, mins, hours, weekday, day, month, year]
         for i in range(len(buf_out)):
-            self._bus.write_word_data(self._address,i,buf_out[i])
+            self._bus.write_word_data(self._address, i, buf_out[i])
 
     def set_alarm1(self, dattime):
         """Set the alarm1 on the DS3231. """
@@ -217,7 +218,7 @@ class DS3231(object):
         """
         The time according to the RTC clock as a datetime.
         """
-        return(self.get_date_time())
+        return self.get_date_time()
 
     @datetime.setter
     def datetime(self, val):
