@@ -16,6 +16,20 @@
 # Character Set - See: https://mil.ufl.edu/4744/docs/lcdmanual/characterset.html
 #
 # PCF8574 Data sheet: https://www.ti.com/lit/ds/symlink/pcf8574.pdf
+# Connection Schematic: https://alselectro.files.wordpress.com/2016/05/image-2.png
+#
+# Connections:
+# PCF8574         HD44780
+# P0         ->   RS
+# P1         ->   R/W
+# P2         ->   EN
+# P3         ->   Backlight LED Transistor to LED+
+# P4         ->   D4
+# P5         ->   D5
+# P6         ->   D6
+# P7         ->   D7
+#
+# Data is written to the HD44780 in two 4-bit nibbles.
 #
 # Acknowledgements:
 # -----------------
@@ -116,8 +130,8 @@ class CharLCD:
 
     # write a command to lcd
     def _write_byte(self, cmd, mode=0):
-        self._write_nibble(mode | (cmd & 0xF0))
-        self._write_nibble(mode | ((cmd << 4) & 0xF0))
+        self._write_nibble(mode | (cmd & 0xF0))         # Write high 4-bits
+        self._write_nibble(mode | ((cmd << 4) & 0xF0))  # Write low 4-bits
 
     # put string function with optional char positioning
     def print(self, string, line=0, pos=0, wrap=0):
@@ -170,7 +184,6 @@ class CharLCD:
             command += self.MOVERIGHT
         self._write_byte(command)
 
-
     # add custom characters (0 - 7)
     def load_custom_chars(self, fontdata):
         self._write_byte(self.SETCGRAMADDR)
@@ -203,6 +216,7 @@ def main(argv):
             sleep(10)
             lcd.clear()
             sleep(1)
+
 
 if __name__ == '__main__':
     import sys
