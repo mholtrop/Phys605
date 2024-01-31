@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Class for driving the ISL2915 RGB Light Sensor.
 #

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # This driver code reads a DS3231 based Real Time Clock (RTC) chip.
 # The DS3231 is a clock chip with a buildin crystal, which simplifies the design

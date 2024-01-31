@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 ####################################################################
 #  SN74HC165
 #  Author: Maurik Holtrop

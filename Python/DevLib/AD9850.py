@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Library to run an eBay AD9850 frequency synthesizer on the RPi GPIO
 #
 # Author: Maurik Holtrop

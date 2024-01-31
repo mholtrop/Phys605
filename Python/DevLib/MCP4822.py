@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # This is a driver for the MCP4822 12-bit SPI DAC
 #

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # This driver sets the output on a MCP4725 chip, and also reads back the current setting.
 #

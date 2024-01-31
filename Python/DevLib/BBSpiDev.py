@@ -38,6 +38,7 @@ except ImportError:
     try:
         import Adafruit_BBIO as GPIO    # If you are using a Beagle Bone.
     except ImportError:
+        print("This error can occur if you are on the RPi but using python instead of python3.")
         raise RuntimeError("It seems that no GPIO system was found. Please check your installation.")
 
 import operator

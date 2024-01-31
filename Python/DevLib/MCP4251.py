@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Despite the name, this driver should work with:
 # MPC424x,MCP425x,MCP426x,MCP414x,MCP415x,MCP416x

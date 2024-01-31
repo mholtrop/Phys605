@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # This driver reads the ADS1115 16-bit Sigma-Delta ADC with internal programmable gain amplifier.
 #
